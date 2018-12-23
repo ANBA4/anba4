@@ -28,7 +28,7 @@ from petsc4py import PETSc
 
 from voight_notation import stressVectorToStressTensor, stressTensorToStressVector, strainVectorToStrainTensor, strainTensorToStrainVector
 from material import material
-from anbax_composite import anbax
+from anbax import anbax
 
 parameters["form_compiler"]["optimize"] = True
 parameters["form_compiler"]["quadrature_degree"] = 2
@@ -60,6 +60,6 @@ matLibrary = []
 matLibrary.append(mat1)
 
 
-anba = anbax(mesh, 2, matLibrary, materials, fiber_orientations, plane_orientations)
+anba = anbax(mesh, 2, matLibrary, materials, plane_orientations, fiber_orientations)
 stiff = anba.compute()
 stiff.view()

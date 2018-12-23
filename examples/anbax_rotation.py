@@ -33,7 +33,7 @@ from mshr import *
 
 from voight_notation import stressVectorToStressTensor, stressTensorToStressVector, strainVectorToStrainTensor, strainTensorToStrainVector
 from material import material
-from anbax_composite import anbax
+from anbax import anbax
 
 parameters["form_compiler"]["optimize"] = True
 parameters["form_compiler"]["quadrature_degree"] = 2
@@ -162,6 +162,6 @@ matLibrary.append(mat1)
 matLibrary.append(mat2)
 
 
-anba = anbax(mesh, 1, matLibrary, materials, fiber_orientations, plane_orientations, 1.E9)
+anba = anbax(mesh, 1, matLibrary, materials, plane_orientations, fiber_orientations, 1.E9)
 stiff = anba.compute()
 stiff.view()

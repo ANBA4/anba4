@@ -28,7 +28,7 @@ from voight_notation import stressVectorToStressTensor, stressTensorToStressVect
 from material import material
 
 class anbax():
-    def __init__(self, mesh, degree, matLibrary, materials, fiber_orientations, plane_orientations, scaling_constraint = 1.):
+    def __init__(self, mesh, degree, matLibrary, materials, plane_orientations, fiber_orientations, scaling_constraint = 1.):
         self.mesh = mesh
         self.degree = degree
         self.matLibrary = matLibrary
