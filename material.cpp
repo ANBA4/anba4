@@ -49,6 +49,7 @@ class Material
 
     Material()
     {
+        transformMatrix = Eigen::MatrixXd::Zero(6, 6);
         matModulus = Eigen::MatrixXd::Zero(6, 6);
     }
     
