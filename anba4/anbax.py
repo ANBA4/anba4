@@ -24,8 +24,8 @@
 from dolfin import *
 from petsc4py import PETSc
 
-from voight_notation import stressVectorToStressTensor, stressTensorToStressVector, strainVectorToStrainTensor, strainTensorToStrainVector
-from material import material
+from anba4.voight_notation import stressVectorToStressTensor, stressTensorToStressVector, strainVectorToStrainTensor, strainTensorToStrainVector
+from anba4 import material
 
 class anbax():
     def __init__(self, mesh, degree, matLibrary, materials, plane_orientations, fiber_orientations, scaling_constraint = 1.):
@@ -98,32 +98,40 @@ class anbax():
         self.chains = [[], [], [], []]
         self.chains_d = [[], [], [], []]
         self.chains_l = [[], [], [], []]
-        for i in range(4):
-	        for k in range(2):
-		        self.chains[i].append(Function(UF3R4))
-		        (d, l) = split(self.chains[i][len(self.chains[i])-1])
-		        self.chains_d[i].append(d)
-		        self.chains_l[i].append(l)
-	        self.chains[i][0].interpolate(self.base_chains_expression[i])
-        for k in [2, 3]:
-	        c = (self.chains[1][0].vector().inner(self.chains[k][0].vector())) / (self.chains[k][0].vector().inner(self.chains[k][0].vector()))
-	        self.chains[1][0].vector()[:] -= c * self.chains[k][0].vector()
 
+        # fill chains
+        for i in range(4):
+            for k in range(2):
+                self.chains[i].append(Function(UF3R4))
         for i in range(2,4):
             for k in range(2):
                 self.chains[i].append(Function(UF3R4))
-                (d, l) = split(self.chains[i][len(self.chains[i])-1])
+
+        # initialize constant chains
+        for i in range(4):
+            self.chains[i][0].interpolate(self.base_chains_expression[i])
+        # keep torsion independent from translation
+        for i in [0, 2, 3]:
+            k = (self.chains[1][0].vector().inner(self.chains[i][0].vector())) / (self.chains[i][0].vector().inner(self.chains[i][0].vector()))
+            self.chains[1][0].vector()[:] -= k * self.chains[i][0].vector()
+        self.null_space = VectorSpaceBasis([self.chains[i][0].vector() for i in range(4)])
+
+        # initialize linear chains
+        for i in range(2,4):
+            self.chains[i][1].interpolate(self.linear_chains_expression[i-2])
+            self.null_space.orthogonalize(self.chains[i][1].vector());
+
+        for i in range(4):
+            for k in range(2):
+                (d, l) = split(self.chains[i][k])
                 self.chains_d[i].append(d)
                 self.chains_l[i].append(l)
-            self.chains[i][1].interpolate(self.linear_chains_expression[i-2])
-            c = (self.chains[i][1].vector().inner(self.chains[0][0].vector())) / (self.chains[0][0].vector().inner(self.chains[0][0].vector()))
-            self.chains[i][1].vector()[:] -= c * self.chains[0][0].vector()
 
-
-        #torsion should not include components along inplane translation
-        for i in [0, 2, 3]:
-	        k = (self.chains[1][0].vector().inner(self.chains[i][0].vector())) / (self.chains[i][0].vector().inner(self.chains[i][0].vector()))
-	        self.chains[1][0].vector()[:] -= k * self.chains[i][0].vector()
+        for i in range(2,4):
+            for k in range(2,4):
+                (d, l) = split(self.chains[i][k])
+                self.chains_d[i].append(d)
+                self.chains_l[i].append(l)
 
     def compute(self):
         stress = self.sigma(self.U, self.UP)
@@ -131,10 +139,8 @@ class anbax():
         stress_1 = stress[:,0]
         stress_2 = stress[:,1]
         stress_s = as_tensor([[stress_1[0], stress_2[0]],
-	        [stress_1[1], stress_2[1]],
-	        [stress_1[2], stress_2[2]]])
-
-        eps = self.epsilon(self.U, self.UP)
+            [stress_1[1], stress_2[1]],
+            [stress_1[2], stress_2[2]]])
 
         ES = derivative(stress, self.U, self.UT)
         ES_t = derivative(stress_s, self.U, self.UT)
@@ -149,7 +155,6 @@ class anbax():
         C = assemble(Cf)
         Hf = (inner(grad(self.UV), ES_n) - inner(self.UV, En_t)) * dx
         H = assemble(Hf)
-
 
         #the four initial solutions
 
@@ -166,65 +171,66 @@ class anbax():
         L = assemble(L_f)
         R_f = derivative(S, self.U, self.UT)
         R = assemble(R_f)
-        #print as_backend_type(M).mat().view()
 
         resk = []
         # solve E d1 = -H d0
         for i in range(2):
-	        solve(E, self.chains[i][1].vector(), -(H*self.chains[i][0].vector()))
-	        #(ou1, ol1) = chains[i][1].split(True)
-	        res = -(H*self.chains[i][1].vector())+(M*self.chains[i][0].vector())
-	        resk.append(res.inner(self.chains[i][0].vector()))
+            solve(E, self.chains[i][1].vector(), -(H*self.chains[i][0].vector()))
+#             for k in range(4):
+#                 c = (self.chains[i][1].vector().inner(self.chains[k][0].vector())) / (self.chains[k][0].vector().inner(self.chains[k][0].vector()))
+#                 self.chains[i][1].vector()[:] -= c * self.chains[k][0].vector()
+#             #(ou1, ol1) = chains[i][1].split(True)
+            res = -(H*self.chains[i][1].vector())+(M*self.chains[i][0].vector())
+            resk.append(res.inner(self.chains[i][0].vector()))
 
 
         # solve E d2 = M d0 - H d1
         for i in [2, 3]:
-        # 	rhs = -(H*chains[i][1].vector())+(M*chains[i][0].vector())
-        # 	for j in range(2):
-        # 		mul = rhs.inner(chains[j][0].vector())
-        # 		chains[i][0].vector()[:] -= chains[j][0].vector() * (mul / resk[j])
-        # 		chains[i][1].vector()[:] -= chains[j][1].vector() * (mul / resk[j])
-	        solve(E, self.chains[i][2].vector(), -(H*self.chains[i][1].vector())+(M*self.chains[i][0].vector()))
+#             rhs = -(H*self.chains[i][1].vector())+(M*self.chains[i][0].vector())
+#             for j in range(2):
+#                 mul = rhs.inner(self.chains[j][0].vector())
+#                 self.chains[i][0].vector()[:] -= self.chains[j][0].vector() * (mul / resk[j])
+#                 self.chains[i][1].vector()[:] -= self.chains[j][1].vector() * (mul / resk[j])
+            solve(E, self.chains[i][2].vector(), -(H*self.chains[i][1].vector())+(M*self.chains[i][0].vector()))
+            for k in range(4):
+                c = (self.chains[i][2].vector().inner(self.chains[k][0].vector())) / (self.chains[k][0].vector().inner(self.chains[k][0].vector()))
+                self.chains[i][2].vector()[:] -= c * self.chains[k][0].vector()
 
-	        rhs = -(H*self.chains[i][2].vector())+(M*self.chains[i][1].vector())
-	        for j in range(2):
-		        mul = rhs.inner(self.chains[j][0].vector())
-		        self.chains[i][1].vector()[:] -= self.chains[j][0].vector() * (mul / resk[j])
-		        self.chains[i][2].vector()[:] -= self.chains[j][1].vector() * (mul / resk[j])
-	        solve(E, self.chains[i][3].vector(), -(H*self.chains[i][2].vector())+(M*self.chains[i][1].vector()))
+#             rhs = -(H*self.chains[i][2].vector())+(M*self.chains[i][1].vector())
+#             for j in range(2):
+#                 mul = rhs.inner(self.chains[j][0].vector())
+#                 self.chains[i][1].vector()[:] -= self.chains[j][0].vector() * (mul / resk[j])
+#                 self.chains[i][2].vector()[:] -= self.chains[j][1].vector() * (mul / resk[j])
+            solve(E, self.chains[i][3].vector(), -(H*self.chains[i][2].vector())+(M*self.chains[i][1].vector()))
+            for k in range(4):
+                c = (self.chains[i][3].vector().inner(self.chains[k][0].vector())) / (self.chains[k][0].vector().inner(self.chains[k][0].vector()))
+                self.chains[i][3].vector()[:] -= c * self.chains[k][0].vector()
 
         # solve E d3 = M d1 - H d2
         for i in range(4):
-	        print("\nChain "+ str(i) +":")
-	        for k in range(len(self.chains[i])//2, len(self.chains[i])):
-		        print("(d" + str(k) + ", d" + str(k)+ ") = ", assemble(inner(self.chains_d[i][k], self.chains_d[i][k]) * dx))
-		        print("(l" + str(k) + ", l" + str(k)+ ") = ", assemble(inner(self.chains_l[i][k], self.chains_l[i][k]) * dx))
-		        (d0p, l0p) = self.chains[i][k].split(True)
-		        #plot(d0p, title="d" + str(k))
-		        #print(X3DOM().html(d0p))
-	        #interactive()
+            for k in range(len(self.chains[i])//2, len(self.chains[i])):
+                (d0p, l0p) = self.chains[i][k].split(True)
 
         # len=2 range(1,0,-1) -> k = 1 len()-1-k len()-k
         # len=4 range(2,0,-1) -> k = 2 len()-1-k=1 len()-k=2
         #                        k = 1 len()-1-k=2 len()-k=3
 
-        print("")
         for i in range(4):
-	        ll = len(self.chains[i])
-	        for k in range(ll//2, 0, -1):
-		        res =  E * self.chains[i][ll-k].vector() + H * self.chains[i][ll-1-k].vector()
-		        if ll-1-k > 0:
-			        res -= M * self.chains[i][ll-2-k].vector()
-		        res = as_backend_type(res).vec()
-		        print('residual chain',i,'order',ll , res.dot(res))
+            ll = len(self.chains[i])
+            for k in range(ll//2, 0, -1):
+                res =  E * self.chains[i][ll-k].vector() + H * self.chains[i][ll-1-k].vector()
+                if ll-1-k > 0:
+                    res -= M * self.chains[i][ll-2-k].vector()
+                res = as_backend_type(res).vec()
+                print('residual chain',i,'order',ll , res.dot(res))
         print("")
 
 
         row1_col = []
         row2_col = []
         for i in range(6):
-	        row1_col.append(as_backend_type(self.chains[0][0].vector().copy()).vec())
-	        row2_col.append(as_backend_type(self.chains[0][0].vector().copy()).vec())
+            row1_col.append(as_backend_type(self.chains[0][0].vector().copy()).vec())
+            row2_col.append(as_backend_type(self.chains[0][0].vector().copy()).vec())
 
         M_p = as_backend_type(M).mat()
         C_p = as_backend_type(C).mat()
@@ -248,26 +254,26 @@ class anbax():
 
         col = -1
         for i in range(4):
-	        ll = len(self.chains[i])
-	        for k in range(ll//2, 0, -1):
-		        col = col + 1
-		        M_p.mult(as_backend_type(self.chains[i][ll-1-k].vector()).vec(), row1_col[col])
-		        C_p.multTransposeAdd(as_backend_type(self.chains[i][ll-k].vector()).vec(), row1_col[col], row1_col[col])
-		        C_p.mult(as_backend_type(self.chains[i][ll-1-k].vector()).vec(), row2_col[col])
-		        E_p.multAdd(as_backend_type(self.chains[i][ll-k].vector()).vec(), row2_col[col], row2_col[col])
+            ll = len(self.chains[i])
+            for k in range(ll//2, 0, -1):
+                col = col + 1
+                M_p.mult(as_backend_type(self.chains[i][ll-1-k].vector()).vec(), row1_col[col])
+                C_p.multTransposeAdd(as_backend_type(self.chains[i][ll-k].vector()).vec(), row1_col[col], row1_col[col])
+                C_p.mult(as_backend_type(self.chains[i][ll-1-k].vector()).vec(), row2_col[col])
+                E_p.multAdd(as_backend_type(self.chains[i][ll-k].vector()).vec(), row2_col[col], row2_col[col])
 
 
         #print dir(PETSc.Vec)
 
         row = -1
         for i in range(4):
-	        ll = len(self.chains[i])
-	        for k in range(ll//2, 0, -1):
-		        row = row + 1
-		        for c in range(6):
-			        S.setValues(row, c, as_backend_type(self.chains[i][ll-1-k].vector()).vec().dot(row1_col[c]) +
-				        as_backend_type(self.chains[i][ll-k].vector()).vec().dot(row2_col[c]))
-		        B.setValues(row, range(6), as_backend_type(L * self.chains[i][ll-1-k].vector() + R * self.chains[i][ll-k].vector()).vec())
+            ll = len(self.chains[i])
+            for k in range(ll//2, 0, -1):
+                row = row + 1
+                for c in range(6):
+                    S.setValues(row, c, as_backend_type(self.chains[i][ll-1-k].vector()).vec().dot(row1_col[c]) +
+                        as_backend_type(self.chains[i][ll-k].vector()).vec().dot(row2_col[c]))
+                B.setValues(row, range(6), as_backend_type(L * self.chains[i][ll-1-k].vector() + R * self.chains[i][ll-k].vector()).vec())
 
         S.assemble()
         B.assemble()
@@ -278,8 +284,8 @@ class anbax():
 
 
         for i in range(6):
-	        ksp.solve(B.getColumnVector(i), g)
-	        G.setValues(range(6), i, g)
+            ksp.solve(B.getColumnVector(i), g)
+            G.setValues(range(6), i, g)
 
         G.assemble()
 
@@ -292,6 +298,7 @@ class anbax():
         "Return second Piola–Kirchhoff stress tensor."
         et = self.epsilon(u, up)
         ev = strainTensorToStrainVector(et)
+#         elasticMatrix = self.modulus
         elasticMatrix = as_matrix(((self.modulus[0],self.modulus[1],self.modulus[2],self.modulus[3],self.modulus[4],self.modulus[5]),\
                                    (self.modulus[6],self.modulus[7],self.modulus[8],self.modulus[9],self.modulus[10],self.modulus[11]),\
                                    (self.modulus[12],self.modulus[13],self.modulus[14],self.modulus[15],self.modulus[16],self.modulus[17]),\
@@ -304,7 +311,8 @@ class anbax():
 
     def epsilon(self, u, up):
         "Return symmetric 3D infinitesimal strain tensor."
-        return 0.5*(self.grad3d(u, up).T + self.grad3d(u, up))
+        g3 = self.grad3d(u, up)
+        return 0.5*(g3.T + g3)
 
     def grad3d(self, u, up):
         "Return 3d gradient."

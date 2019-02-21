@@ -26,10 +26,10 @@ from petsc4py import PETSc
 
 import numpy as np
 
-from voight_notation import stressVectorToStressTensor, stressTensorToStressVector, strainVectorToStrainTensor, strainTensorToStrainVector
-from material import material
+from anba4.voight_notation import stressVectorToStressTensor, stressTensorToStressVector, strainVectorToStrainTensor, strainTensorToStrainVector
+from anba4 import material
 
-class anbax():
+class anbax_singular():
     def __init__(self, mesh, degree, matLibrary, materials, plane_orientations, fiber_orientations, scaling_constraint = 1.):
         self.mesh = mesh
         self.degree = degree
@@ -140,14 +140,12 @@ class anbax():
 
         Ef = inner(grad(self.UV), ES_t) * dx
         E = assemble(Ef)
-        viewer = PETSc.Viewer().createBinary('pippo.dat', 'w')
-        as_backend_type(E).mat().view(viewer)
 
-        solver = PETScKrylovSolver("minres")
+        solver = PETScKrylovSolver("cg")
         solver.parameters["relative_tolerance"] = 1.E-10
 #        solver.parameters["absolute_tolerance"] = 1.E-16
 #        solver.parameters["convergence_norm_type"] = "natural"
-        solver.parameters["monitor_convergence"] = True
+#        solver.parameters["monitor_convergence"] = True
         solver.set_operator(E)
         as_backend_type(E).set_nullspace(self.null_space)
         ptn = PETSc.NullSpace([as_backend_type(self.chains[i][0].vector()).vec() for i in range(4)])
@@ -163,11 +161,9 @@ class anbax():
         maxres = 0.
         for i in range(4):
             tmp = E*self.chains[i][0].vector()
-            print('chain ', i,' : ', sqrt(tmp.inner(tmp)))
             maxres = max(maxres, sqrt(tmp.inner(tmp)))
         for i in [2, 3]:
             tmp = -(H*self.chains[i][0].vector()) -(E * self.chains[i][1].vector())
-            print('chain  ', i,'.1 : ', sqrt(tmp.inner(tmp)))
             maxres = max(maxres, sqrt(tmp.inner(tmp)))
         
         if maxres > 1.E-16:
@@ -181,11 +177,9 @@ class anbax():
             self.chains[i][1].vector()[:] = self.chains[i][1].vector() * scaling_factor
         for i in range(4):
             tmp = E*self.chains[i][0].vector()
-            print('chain ', i,' : ', sqrt(tmp.inner(tmp)))
             maxres = max(maxres, sqrt(tmp.inner(tmp)))
         for i in [2, 3]:
             tmp = -(H*self.chains[i][0].vector()) -(E * self.chains[i][1].vector())
-            print('chain  ', i,'.1 : ', sqrt(tmp.inner(tmp)))
             maxres = max(maxres, sqrt(tmp.inner(tmp)))
 
         resk = []
@@ -199,8 +193,6 @@ class anbax():
             for k in range(4):
                 c = (self.chains[i][1].vector().inner(self.chains[k][0].vector())) / (self.chains[k][0].vector().inner(self.chains[k][0].vector()))
                 self.chains[i][1].vector()[:] -= c * self.chains[k][0].vector()
-                print(self.chains[i][1].vector().inner(self.chains[k][0].vector()))
-            print('===================')
             res = -(H*self.chains[i][1].vector())+(M*self.chains[i][0].vector())
             resk.append(res.inner(self.chains[i][0].vector()))
 
@@ -209,9 +201,6 @@ class anbax():
             self.b.vector()[:] = -(H*self.chains[i][1].vector())+(M*self.chains[i][0].vector())
 #             self.null_space.orthogonalize(self.b.vector());
             print('Solving ',i,0)
-            print('---------------')
-            for k in range(4):
-                print(self.b.vector().inner(self.chains[k][0].vector()))        
             solver.solve(E, self.chains[i][2].vector(), self.b.vector())
 
 
@@ -219,21 +208,16 @@ class anbax():
         a = np.zeros((2,2))
         b = np.zeros((2,1))
         for i in [2, 3]:
-            print('xxxxxxxxxxxx', i)
             self.b.vector()[:] = -(H*self.chains[i][2].vector())+(M*self.chains[i][1].vector())
             for k in range(4):
                 print(self.b.vector().inner(self.chains[k][0].vector()))        
         for i in [2, 3]:
-            print('xxx : ', i)
             self.b.vector()[:] = -(H*self.chains[i][2].vector())+(M*self.chains[i][1].vector())
             for k in range(2):
                 b[k] = self.b.vector().inner(self.chains[k][0].vector())
                 for ii in range(2):
                     #a[ii, k] = (-(H*self.chains[ii][0].vector())).inner(self.chains[k][0].vector()) / normk
                     a[k, ii] = (-(H*self.chains[ii][1].vector())+(M*self.chains[ii][0].vector())).inner(self.chains[k][0].vector())
-            print(b)
-            print(a)
-            #x = np.linalg.lstsq(a, b, rcond=None)[0]
             x = np.linalg.solve(a, b)
             for ii in range(2):
                 self.chains[i][2].vector()[:] -= x[ii] * self.chains[ii][1].vector()
@@ -241,18 +225,13 @@ class anbax():
         #asd
         
         for i in [2, 3]:
-            print('Risolvo ',i,1)
-            print('---------------')
+            print('Solving ',i,1)
             self.b.vector()[:] = -(H*self.chains[i][2].vector())+(M*self.chains[i][1].vector())
-            for k in range(4):
-                print('k: ', self.b.vector().inner(self.chains[k][0].vector()))        
             solver.solve(E, self.chains[i][3].vector(), self.b.vector())
 #             self.null_space.orthogonalize(self.chains[i][3].vector());
             for k in range(4):
                 c = (self.chains[i][3].vector().inner(self.chains[k][0].vector())) / (self.chains[k][0].vector().inner(self.chains[k][0].vector()))
                 self.chains[i][3].vector()[:] -= c * self.chains[k][0].vector()
-                print(self.chains[i][3].vector().inner(self.chains[k][0].vector()))
-            print('===================')
 
         # solve E d3 = M d1 - H d2
         for i in range(4):

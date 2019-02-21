@@ -63,6 +63,55 @@ class Material
     {
         constexpr double pi = 3.14159265358979323846;
         constexpr double pi180 = pi / 180.;
+
+/*        // alpha->fiber plane oriention; beta->fiber oriention.
+        const double a = std::sin(alpha*pi180);
+        const double b = std::cos(alpha*pi180);
+        const double s = std::sin(beta*pi180);
+        const double c = std::cos(beta*pi180);
+	const double s2 = s * s;
+	const double c2 = c * c;
+	const double a2 = a * a;
+	const double b2 = b * b;
+
+        transformMatrix(0, 0) = b2 * c2;
+        transformMatrix(0, 1) = a2 * c2;
+        transformMatrix(0, 2) = s2;
+        transformMatrix(0, 3) = 2*a*c*s;
+        transformMatrix(0, 4) = 2 * b*c*s;
+        transformMatrix(0, 5) = 2.0 * a*b*c2;
+
+        transformMatrix(1, 0) = a2;
+        transformMatrix(1, 1) = b2;
+        transformMatrix(1, 5) = -2.0 * a * b;
+
+        transformMatrix(2, 0) = b2*s2;
+        transformMatrix(2, 1) = a2 * s2;
+        transformMatrix(2, 2) = c2;
+        transformMatrix(2, 3) = -2*a*c*s;
+        transformMatrix(2, 4) = -2.0 * b*c*s;
+        transformMatrix(2, 5) = 2.0 * a*b*s2;
+
+        transformMatrix(3, 0) = a*b*s;
+        transformMatrix(3, 1) = -a*b*s;
+        transformMatrix(3, 3) = b*c;
+        transformMatrix(3, 4) = -a*c;
+        transformMatrix(3, 5) = -(b2-a2)*s;
+
+        transformMatrix(4, 0) = -b2*c*s;
+        transformMatrix(4, 1) = -a2*c*s;
+        transformMatrix(4, 2) = c*s;
+        transformMatrix(4, 3) = a*c2*s2;
+        transformMatrix(4, 4) = b*c2*s2;
+        transformMatrix(4, 5) = -2*a*b*c*s;
+
+        transformMatrix(5, 0) = -a*b*c;
+        transformMatrix(5, 1) = a*b*c;
+        transformMatrix(5, 3) = b*s;
+        transformMatrix(5, 4) = -a*s;
+        transformMatrix(5, 5) = (b2-a2)*c;
+*/
+
 	
         // alpha->fiber plane oriention; beta->fiber oriention.
         const double sn_a = -std::sin(alpha*pi180);

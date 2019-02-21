@@ -58,6 +58,6 @@ matLibrary = []
 matLibrary.append(mat1)
 
 
-anba = anbax(mesh, 2, matLibrary, materials, plane_orientations, fiber_orientations)
+anba = anbax_singular(mesh, 2, matLibrary, materials, plane_orientations, fiber_orientations)
 stiff = anba.compute()
 stiff.view()

@@ -32,12 +32,7 @@ import matplotlib.pyplot as plt
 
 from anba4 import *
 
-# from voight_notation import stressVectorToStressTensor, stressTensorToStressVector, strainVectorToStrainTensor, strainTensorToStrainVector
-# from material import material
-# from anbax import anbax
-
 parameters["form_compiler"]["optimize"] = True
-parameters["form_compiler"]["cpp_optimize_flags"] = "-O2"
 parameters["form_compiler"]["quadrature_degree"] = 2
 
 # Basic material parameters. 9 is needed for orthotropic materials.
@@ -117,12 +112,12 @@ subdomain_14_p70 = CompiledSubDomain("x[1] >= 6.0*thickness - tol && x[1] <= 7.0
 subdomain_15_m20 = CompiledSubDomain("x[1] >= 7.0*thickness - tol && x[1] <= 8.0*thickness + tol",thickness = sectionHeight / nPly, tol=tol)
 
 # Rotate mesh.
-rotation_angle = 0.#23.0
+rotation_angle = 23.0
 materials.set_all(0)
 fiber_orientations.set_all(0.0)
 plane_orientations.set_all(rotation_angle)
 
-#subdomain_0_p20.mark(materials, 1)
+subdomain_0_p20.mark(materials, 1)
 
 subdomain_0_p20.mark(fiber_orientations, 20.0)
 subdomain_1_m70.mark(fiber_orientations, -70.0)
@@ -158,10 +153,10 @@ mat1 = material.OrthotropicMaterial(matMechanicProp)
 #matMechanicProp1[0] = matMechanicProp1[0] / 100.
 #matMechanicProp1[1] = matMechanicProp1[1] / 100.
 
-#mat2 = material.IsotropicMaterial(matMechanicProp1)
+mat2 = material.IsotropicMaterial(matMechanicProp1)
 matLibrary = []
 matLibrary.append(mat1)
-#matLibrary.append(mat2)
+matLibrary.append(mat2)
 
 
 anba = anbax(mesh, 1, matLibrary, materials, plane_orientations, fiber_orientations, 1.E9)

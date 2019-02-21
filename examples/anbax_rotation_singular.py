@@ -29,15 +29,11 @@ import numpy as np
 from petsc4py import PETSc
 import os
 import matplotlib.pyplot as plt
+from mshr import *
 
 from anba4 import *
 
-# from voight_notation import stressVectorToStressTensor, stressTensorToStressVector, strainVectorToStrainTensor, strainTensorToStrainVector
-# from material import material
-# from anbax import anbax
-
 parameters["form_compiler"]["optimize"] = True
-parameters["form_compiler"]["cpp_optimize_flags"] = "-O2"
 parameters["form_compiler"]["quadrature_degree"] = 2
 
 # Basic material parameters. 9 is needed for orthotropic materials.
@@ -63,7 +59,6 @@ matMechanicProp[2,0] = nu_zy
 matMechanicProp[2,1] = nu_zx
 matMechanicProp[2,2] = nu_xy
 
-matMechanicProp1 = [ 9.8e9 / 100., 0.3]
 # Meshing domain.
 sectionWidth = 3.0023e-2
 sectionHeight = 1.9215e-3
@@ -117,12 +112,10 @@ subdomain_14_p70 = CompiledSubDomain("x[1] >= 6.0*thickness - tol && x[1] <= 7.0
 subdomain_15_m20 = CompiledSubDomain("x[1] >= 7.0*thickness - tol && x[1] <= 8.0*thickness + tol",thickness = sectionHeight / nPly, tol=tol)
 
 # Rotate mesh.
-rotation_angle = 0.#23.0
+rotation_angle = 0. #23.0
 materials.set_all(0)
 fiber_orientations.set_all(0.0)
 plane_orientations.set_all(rotation_angle)
-
-#subdomain_0_p20.mark(materials, 1)
 
 subdomain_0_p20.mark(fiber_orientations, 20.0)
 subdomain_1_m70.mark(fiber_orientations, -70.0)
@@ -145,25 +138,17 @@ subdomain_14_p70.mark(fiber_orientations, 70.0)
 subdomain_15_m20.mark(fiber_orientations, -20.0)
 
 # rotate mesh.
-rotate = Expression(("x[0] * (cos(rotation_angle)-1.0) - x[1] * sin(rotation_angle)",
-    "x[0] * sin(rotation_angle) + x[1] * (cos(rotation_angle)-1.0)"), rotation_angle = rotation_angle * np.pi / 180.0,
-    degree = 1)
-
-ALE.move(mesh, rotate)
+# rotate = Expression(("x[0] * (cos(rotation_angle)-1.0) - x[1] * sin(rotation_angle)",
+#     "x[0] * sin(rotation_angle) + x[1] * (cos(rotation_angle)-1.0)"), rotation_angle = rotation_angle * np.pi / 180.0,
+#     degree = 1)
+# 
+# ALE.move(mesh, rotate)
 
 # Build material property library.
 mat1 = material.OrthotropicMaterial(matMechanicProp)
-
-#matMechanicProp1 = matMechanicProp
-#matMechanicProp1[0] = matMechanicProp1[0] / 100.
-#matMechanicProp1[1] = matMechanicProp1[1] / 100.
-
-#mat2 = material.IsotropicMaterial(matMechanicProp1)
 matLibrary = []
 matLibrary.append(mat1)
-#matLibrary.append(mat2)
 
-
-anba = anbax(mesh, 1, matLibrary, materials, plane_orientations, fiber_orientations, 1.E9)
+anba = anbax_singular(mesh, 1, matLibrary, materials, plane_orientations, fiber_orientations, 1.E9)
 stiff = anba.compute()
 stiff.view()
