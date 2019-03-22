@@ -28,5 +28,5 @@ from dolfin import compile_cpp_code
 pwd = os.path.dirname(os.path.abspath(__file__))
 with open(pwd + "/material.cpp", "r") as f:
     material_code = f.read()
-#material = compile_cpp_code(material_code, cppargs=('-g', '-O0'))
+#material_cpp = compile_cpp_code(material_code, cppargs=('-g', '-O0'))
 material_cpp = compile_cpp_code(material_code)
