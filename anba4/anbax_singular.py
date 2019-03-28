@@ -46,6 +46,13 @@ class anbax_singular():
             ),
             degree=0
         )
+        self.density = CompiledExpression(
+            material.MaterialDensity(
+                self.matLibrary,
+                self.materials
+            ),
+            degree=0
+        )
         self.scaling_constraint = scaling_constraint
 
         # Define function on space.
@@ -57,8 +64,8 @@ class anbax_singular():
         R3 = FunctionSpace(self.mesh, R3_ELEMENT)
         R3R3_ELEMENT = MixedElement(R3_ELEMENT, R3_ELEMENT)
         R3R3 = FunctionSpace(self.mesh, R3R3_ELEMENT)
-        (self.RT3F, self.RT3M) = TestFunctions(R3R3)
-        self.RT3 = TestFunction(R3)
+        (self.RV3F, self.RV3M) = TestFunctions(R3R3)
+        (self.RT3F, self.RT3M) = TrialFunctions(R3R3)
 
 
         self.b = Function(UF3)
@@ -109,6 +116,16 @@ class anbax_singular():
 #	            c = (self.chains[i][1].vector().inner(self.chains[k][0].vector())) / (self.chains[k][0].vector().inner(self.chains[k][0].vector()))
 #	            self.chains[i][1].vector()[:] -= c * self.chains[k][0].vector()
 
+    def inertia(self):
+        Mf  = dot(self.RV3F, self.RT3F) * self.density[0] * dx
+        Mf += dot(self.RV3F, cross(self.pos3d(self.POS), self.RT3M)) * self.density[0] * dx
+        Mf += dot(cross(self.pos3d(self.POS), self.RV3F), self.RT3M) * self.density[0] * dx
+        Mf += dot(cross(self.pos3d(self.POS), self.RV3M), cross(self.pos3d(self.POS), self.RT3M)) * self.density[0] * dx
+        M = as_backend_type(assemble(Mf)).mat()
+        Mass = PETSc.Mat().createDense([6, 6])
+        Mass.setPreallocationDense(None)
+        M.copy(Mass)
+        return Mass
 
     def compute(self):
         stress = self.sigma(self.U, self.UP)
@@ -151,7 +168,7 @@ class anbax_singular():
         ptn = PETSc.NullSpace([as_backend_type(self.chains[i][0].vector()).vec() for i in range(4)])
         as_backend_type(E).mat().setTransposeNullSpace(ptn)
 
-        S = dot(stress_n, self.RT3F) * dx + dot(cross(self.pos3d(self.POS), stress_n), self.RT3M) * dx
+        S = dot(stress_n, self.RV3F) * dx + dot(cross(self.pos3d(self.POS), stress_n), self.RV3M) * dx
         L_f = derivative(S, self.UP, self.UT)
         L = assemble(L_f)
         R_f = derivative(S, self.U, self.UT)

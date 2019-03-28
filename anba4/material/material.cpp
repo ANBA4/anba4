@@ -39,6 +39,7 @@ class Material
 {
     private:
         mutable Eigen::Matrix<double, 6, 6, Eigen::RowMajor> transformMatrix;
+	const double rho;
     protected:
         mutable Eigen::Matrix<double, 6, 6, Eigen::RowMajor> matModulus;
     public:
@@ -47,12 +48,15 @@ class Material
     Material& operator=(Material&) = delete;  // Disallow copying
     Material(const Material&) = delete;
 
-    Material()
+    Material(const double _rho) : rho(_rho)
     {
         transformMatrix = Eigen::MatrixXd::Zero(6, 6);
         matModulus = Eigen::MatrixXd::Zero(6, 6);
     }
     
+    const double Rho() const {
+        return rho;
+    }
     virtual const Eigen::Matrix<double, 6, 6, Eigen::RowMajor>&
     ComputeElasticModulus(const double& alpha, const double& beta) const = 0;
     
@@ -169,8 +173,8 @@ public:
     IsotropicMaterial& operator=(IsotropicMaterial&) = delete;  // Disallow copying
     IsotropicMaterial(const IsotropicMaterial&) = delete;
     
-    IsotropicMaterial(const Eigen::Matrix<double, 2, 1> _matMechanicProp):
-    Material(), matMechanicProp(_matMechanicProp)
+    IsotropicMaterial(const Eigen::Matrix<double, 2, 1> _matMechanicProp, const double _rho):
+    Material(_rho), matMechanicProp(_matMechanicProp)
     {
 
         const double E = matMechanicProp(0);
@@ -216,8 +220,8 @@ public:
     OrthotropicMaterial& operator=(OrthotropicMaterial&) = delete;  // Disallow copying
     OrthotropicMaterial(const OrthotropicMaterial&) = delete;
 
-    OrthotropicMaterial(const Eigen::Matrix<double,3,3, Eigen::RowMajor> _matMechanicProp):
-    Material(), matMechanicProp(_matMechanicProp)
+    OrthotropicMaterial(const Eigen::Matrix<double,3,3, Eigen::RowMajor> _matMechanicProp, const double _rho):
+    Material(_rho), matMechanicProp(_matMechanicProp)
     {
 
         const double e_xx = matMechanicProp(0,0);
@@ -337,6 +341,36 @@ public:
         values(35) = transformedStiffness(5, 5);
     }
 }; // class
+
+class MaterialDensity : public dolfin::Expression
+{
+private:
+    const std::vector<std::shared_ptr<const Material>> matsLibrary;
+    const std::shared_ptr<const dolfin::MeshFunction<std::size_t>> material_id;
+
+public:
+    MaterialDensity& operator=(MaterialDensity&) = delete;  // Disallow copying
+    MaterialDensity(const MaterialDensity&) = delete;
+
+    // Constructor.
+    MaterialDensity(
+        const std::vector<std::shared_ptr<const Material>> _matsLibrary,
+        const std::shared_ptr<const dolfin::MeshFunction<std::size_t>> _material_id) :
+		dolfin::Expression(1),
+		matsLibrary(_matsLibrary),
+		material_id(_material_id)
+    {}
+
+    // Eval at every cell.
+    void eval(Eigen::Ref<Eigen::VectorXd> values, const Eigen::Ref<const Eigen::VectorXd> x, const ufc::cell& c) const override
+    {
+        size_t mat_id = (*material_id)[c.index];
+
+        // Assign density.
+        values(0) = matsLibrary[mat_id]->Rho();
+    }
+}; // class
+
 } // namespace anba
 
 //
@@ -350,15 +384,20 @@ PYBIND11_MODULE(SIGNATURE, m)
     Material
     	.def("TransformationMatrix", &anba::Material::TransformationMatrix);
 
-
     pybind11::class_<anba::IsotropicMaterial, std::shared_ptr<anba::IsotropicMaterial>, anba::Material> 
       (m, "IsotropicMaterial", "Isotropic material class")
-    .def(pybind11::init<const Eigen::Matrix<double, 2, 1>>()
+    .def(
+        pybind11::init<const Eigen::Matrix<double, 2, 1>, const double>(),
+        pybind11::arg("prop"),
+        pybind11::arg("rho") = 0.
     );
 
     pybind11::class_<anba::OrthotropicMaterial, std::shared_ptr<anba::OrthotropicMaterial>, anba::Material> 
       (m, "OrthotropicMaterial", "Orthotropic material class")
-    .def(pybind11::init<const Eigen::Matrix<double,3,3, Eigen::RowMajor>>()
+    .def(
+        pybind11::init<const Eigen::Matrix<double,3,3, Eigen::RowMajor>, const double>(),
+        pybind11::arg("prop"),
+        pybind11::arg("rho") = 0.
     );
 
     pybind11::class_<anba::ElasticModulus, std::shared_ptr<anba::ElasticModulus>, dolfin::Expression>
@@ -367,6 +406,12 @@ PYBIND11_MODULE(SIGNATURE, m)
     	const std::shared_ptr<const dolfin::MeshFunction<std::size_t>>,
 	const std::shared_ptr<const dolfin::MeshFunction<double>>,
 	const std::shared_ptr<const dolfin::MeshFunction<double>>>()
+    );
+
+    pybind11::class_<anba::MaterialDensity, std::shared_ptr<anba::MaterialDensity>, dolfin::Expression>
+      (m, "MaterialDensity", "MaterialDensity expression")
+    .def(pybind11::init<const std::vector<std::shared_ptr<const anba::Material>>,
+        const std::shared_ptr<const dolfin::MeshFunction<std::size_t>>>()
     );
 }
 

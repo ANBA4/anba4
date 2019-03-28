@@ -44,6 +44,13 @@ class anbax():
             ),
             degree=0
         )
+        self.density = CompiledExpression(
+            material.MaterialDensity(
+                self.matLibrary,
+                self.materials
+            ),
+            degree=0
+        )
         self.scaling_constraint = scaling_constraint
 
         # Define function on space.
@@ -58,8 +65,8 @@ class anbax():
         R3R3_ELEMENT = MixedElement(R3_ELEMENT, R3_ELEMENT)
         R3R3 = FunctionSpace(self.mesh, R3R3_ELEMENT)
         parameters["reorder_dofs_serial"] = sp
-        (self.RT3F, self.RT3M) = TestFunctions(R3R3)
-        self.RT3 = TestFunction(R3)
+        (self.RV3F, self.RV3M) = TestFunctions(R3R3)
+        (self.RT3F, self.RT3M) = TrialFunctions(R3R3)
 
 
         #Lagrange multipliers needed to impose the BCs
@@ -133,6 +140,17 @@ class anbax():
                 self.chains_d[i].append(d)
                 self.chains_l[i].append(l)
 
+    def inertia(self):
+        Mf  = dot(self.RV3F, self.RT3F) * self.density[0] * dx
+        Mf += dot(self.RV3F, cross(self.pos3d(self.POS), self.RT3M)) * self.density[0] * dx
+        Mf += dot(cross(self.pos3d(self.POS), self.RV3F), self.RT3M) * self.density[0] * dx
+        Mf += dot(cross(self.pos3d(self.POS), self.RV3M), cross(self.pos3d(self.POS), self.RT3M)) * self.density[0] * dx
+        M = as_backend_type(assemble(Mf)).mat()
+        Mass = PETSc.Mat().createDense([6, 6])
+        Mass.setPreallocationDense(None)
+        M.copy(Mass)
+        return Mass
+
     def compute(self):
         stress = self.sigma(self.U, self.UP)
         stress_n = stress[:,2]
@@ -166,7 +184,7 @@ class anbax():
         Ef += self.LT[3] * dot(self.UV, self.chains_d[1][0]) * Escal * dx
         E = assemble(Ef)
 
-        S = dot(stress_n, self.RT3F) * dx + dot(cross(self.pos3d(self.POS), stress_n), self.RT3M) * dx
+        S = dot(stress_n, self.RV3F) * dx + dot(cross(self.pos3d(self.POS), stress_n), self.RV3M) * dx
         L_f = derivative(S, self.UP, self.UT)
         L = assemble(L_f)
         R_f = derivative(S, self.U, self.UT)

@@ -52,12 +52,15 @@ fiber_orientations.set_all(0.0)
 plane_orientations.set_all(0.0)
 
 # Build material property library.
-mat1 = material.IsotropicMaterial(matMechanicProp)
+mat1 = material.IsotropicMaterial(matMechanicProp, 1.)
 
 matLibrary = []
 matLibrary.append(mat1)
 
-
 anba = anbax(mesh, 2, matLibrary, materials, plane_orientations, fiber_orientations)
 stiff = anba.compute()
 stiff.view()
+
+mass = anba.inertia()
+mass.view()
+
