@@ -44,6 +44,15 @@ class anbax():
             ),
             degree=0
         )
+        self.RotatedStress_modulus = CompiledExpression(
+            material.RotatedStressElasticModulus(
+                self.matLibrary,
+                self.materials,
+                self.plane_orientations,
+                self.fiber_orientations
+            ),
+            degree=0
+        )
         self.density = CompiledExpression(
             material.MaterialDensity(
                 self.matLibrary,
@@ -259,14 +268,14 @@ class anbax():
         B = PETSc.Mat().createDense([6, 6])
         B.setPreallocationDense(None)
 
-        G = PETSc.Mat().createDense([6, 6])
-        G.setPreallocationDense(None)
+        self.G = PETSc.Mat().createDense([6, 6])
+        self.G.setPreallocationDense(None)
 
         g = PETSc.Vec().createMPI(6)
         b = PETSc.Vec().createMPI(6)
 
-        Stiff = PETSc.Mat().createDense([6, 6])
-        Stiff.setPreallocationDense(None)
+        self.Stiff = PETSc.Mat().createDense([6, 6])
+        self.Stiff.setPreallocationDense(None)
 
 
 
@@ -303,26 +312,34 @@ class anbax():
 
         for i in range(6):
             ksp.solve(B.getColumnVector(i), g)
-            G.setValues(range(6), i, g)
+            self.G.setValues(range(6), i, g)
 
-        G.assemble()
+        self.G.assemble()
 
-        G.transposeMatMult(S, B)
-        B.matMult(G, Stiff)
+        self.G.transposeMatMult(S, B)
+        B.matMult(self.G, self.Stiff)
         
-        return Stiff
-        
+        return self.Stiff
+
     def sigma(self, u, up):
+        "Return second Piola–Kirchhoff stress tensor."
+        return self.sigma_helper(um up, self.modulus)
+
+    def Rotatedsigma(self, u, up):
+        "Return second Piola–Kirchhoff stress tensor."
+        return self.sigma_helper(um up, self.RotatedStress_modulus)
+
+    def sigma_helper(self, u, up, mod):
         "Return second Piola–Kirchhoff stress tensor."
         et = self.epsilon(u, up)
         ev = strainTensorToStrainVector(et)
 #         elasticMatrix = self.modulus
-        elasticMatrix = as_matrix(((self.modulus[0],self.modulus[1],self.modulus[2],self.modulus[3],self.modulus[4],self.modulus[5]),\
-                                   (self.modulus[6],self.modulus[7],self.modulus[8],self.modulus[9],self.modulus[10],self.modulus[11]),\
-                                   (self.modulus[12],self.modulus[13],self.modulus[14],self.modulus[15],self.modulus[16],self.modulus[17]),\
-                                   (self.modulus[18],self.modulus[19],self.modulus[20],self.modulus[21],self.modulus[22],self.modulus[23]),\
-                                   (self.modulus[24],self.modulus[25],self.modulus[26],self.modulus[27],self.modulus[28],self.modulus[29]),\
-                                   (self.modulus[30],self.modulus[31],self.modulus[32],self.modulus[33],self.modulus[34],self.modulus[35])))
+        elasticMatrix = as_matrix(((mod[0],mod[1],mod[2],mod[3],mod[4],mod[5]),\
+                                   (mod[6],mod[7],mod[8],mod[9],mod[10],mod[11]),\
+                                   (mod[12],mod[13],mod[14],mod[15],mod[16],mod[17]),\
+                                   (mod[18],mod[19],mod[20],mod[21],mod[22],mod[23]),\
+                                   (mod[24],mod[25],mod[26],mod[27],mod[28],mod[29]),\
+                                   (mod[30],mod[31],mod[32],mod[33],mod[34],mod[35])))
         sv = elasticMatrix * ev
         st = stressVectorToStressTensor(sv)
         return st

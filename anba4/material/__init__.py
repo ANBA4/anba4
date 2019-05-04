@@ -1,4 +1,5 @@
 from . import material_wrapper
+RotatedStressElasticModulus = material_wrapper.material_cpp.RotatedStressElasticModulus
 ElasticModulus = material_wrapper.material_cpp.ElasticModulus
 MaterialDensity = material_wrapper.material_cpp.MaterialDensity
 IsotropicMaterial = material_wrapper.material_cpp.IsotropicMaterial
