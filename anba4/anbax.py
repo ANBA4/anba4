@@ -422,5 +422,5 @@ class anbax():
                 row = row + 1
                 self.UL.vector()[:] += self.chains[i][ll-k].vector() * eigensol_magnitudes[row]
                 self.ULP.vector()[:] += self.chains[i][ll-1-k].vector() * eigensol_magnitudes[row]
-        self.local_project(vector_conversion(self.Sigma(self.U, self.UP)), self.STRESS.ufl_function_space(), self.STRESS)
-#        self.local_project(self.Sigma(self.U, self.UP), self.STRESS.ufl_function_space(), self.STRESS)
+        self.local_project(vector_conversion(stress_comp(self.U, self.UP)), self.STRESS.ufl_function_space(), self.STRESS)
+#        self.local_project(stress_comp(self.U, self.UP), self.STRESS.ufl_function_space(), self.STRESS)
