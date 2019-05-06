@@ -24,7 +24,9 @@
 from dolfin import *
 from petsc4py import PETSc
 
-from anba4.voight_notation import stressVectorToStressTensor, stressTensorToStressVector, strainVectorToStrainTensor, strainTensorToStrainVector
+from anba4.voight_notation import stressVectorToStressTensor, \
+    stressTensorToStressVector, stressTensorToParaviewStressVector, \
+    strainVectorToStrainTensor, strainTensorToStrainVector
 from anba4 import material
 
 class anbax():
@@ -381,13 +383,19 @@ class anbax():
             solver.solve_local_rhs(u)
             return
 
-    def stress_field(self, force, moment, reference = "local"):
+    def stress_field(self, force, moment, reference = "local", voigt_convention = "anba"):
         if reference == "local":
             stress_comp = self.RotatedSigma
         elif reference == "global":
             stress_comp = self.Sigma
         else:
-            raise ValueError('reference argument should be equal to either to\"local\" or to "global", it is equal instead to.' + reference)
+            raise ValueError('reference argument should be equal to either to\"local\" or to "global", got \"' + reference + '\" instead')
+        if voigt_convention == "anba":
+            vector_conversion = stressTensorToStressVector
+        elif voigt_convention == "paraview":
+            vector_conversion = stressTensorToParaviewStressVector
+        else:
+            raise ValueError('voigt_convention argument should be equal to either to\"anba\" or to "paraview", got \"' + voigt_convention + '\" instead')
 
         eigensol_magnitudes = PETSc.Vec().createMPI(6)
 
@@ -406,12 +414,13 @@ class anbax():
         ksp.solve(AzInt, eigensol_magnitudes)
         
         self.UL.vector()[:] = 0.
+        self.ULP.vector()[:] = 0.
         row = -1
         for i in range(4):
             ll = len(self.chains[i])
             for k in range(ll//2, 0, -1):
                 row = row + 1
-                self.UL.vector()[:] += self.chains[i][ll-1-k].vector() * eigensol_magnitudes[row]
-                self.ULP.vector()[:] += self.chains[i][ll-k].vector() * eigensol_magnitudes[row]
-        self.local_project(stressTensorToStressVector(self.Sigma(self.U, self.UP)), self.STRESS.ufl_function_space(), self.STRESS)
+                self.UL.vector()[:] += self.chains[i][ll-k].vector() * eigensol_magnitudes[row]
+                self.ULP.vector()[:] += self.chains[i][ll-1-k].vector() * eigensol_magnitudes[row]
+        self.local_project(vector_conversion(self.Sigma(self.U, self.UP)), self.STRESS.ufl_function_space(), self.STRESS)
 #        self.local_project(self.Sigma(self.U, self.UP), self.STRESS.ufl_function_space(), self.STRESS)
