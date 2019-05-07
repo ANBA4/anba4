@@ -42,6 +42,7 @@ class Material
 	const double rho;
     protected:
         mutable Eigen::Matrix<double, 6, 6, Eigen::RowMajor> matModulus;
+        mutable Eigen::Matrix<double, 6, 6, Eigen::RowMajor> matRotatedStressModulus;
     public:
     // std::bool isActive;
 
@@ -52,6 +53,7 @@ class Material
     {
         transformMatrix = Eigen::MatrixXd::Zero(6, 6);
         matModulus = Eigen::MatrixXd::Zero(6, 6);
+        matRotatedStressModulus = Eigen::MatrixXd::Zero(6, 6);
     }
     
     const double Rho() const {
@@ -59,6 +61,8 @@ class Material
     }
     virtual const Eigen::Matrix<double, 6, 6, Eigen::RowMajor>&
     ComputeElasticModulus(const double& alpha, const double& beta) const = 0;
+    virtual const Eigen::Matrix<double, 6, 6, Eigen::RowMajor>&
+    ComputeRotatedStressElasticModulus(const double& alpha, const double& beta) const = 0;
     
     virtual ~Material() = default;
 
@@ -206,6 +210,12 @@ public:
     ComputeElasticModulus(const double& alpha, const double& beta) const override {
     	return matModulus;
     }
+    virtual const Eigen::Matrix<double, 6, 6, Eigen::RowMajor>&
+    ComputeRotatedStressElasticModulus(const double& alpha, const double& beta) const override {
+        const Eigen::Matrix<double,6,6, Eigen::RowMajor>& TM = TransformationMatrix(alpha, beta);
+	matRotatedStressModulus = matModulus * TM.transpose();
+	return matRotatedStressModulus;
+    }
     
     virtual ~IsotropicMaterial() = default;
 };
@@ -263,6 +273,12 @@ public:
         const Eigen::Matrix<double,6,6, Eigen::RowMajor>& TM = TransformationMatrix(alpha, beta);
 	matModulus = TM * matLocalModulus * TM.transpose();
     	return matModulus;
+    }
+    virtual const Eigen::Matrix<double, 6, 6, Eigen::RowMajor>&
+    ComputeRotatedStressElasticModulus(const double& alpha, const double& beta) const override {
+        const Eigen::Matrix<double,6,6, Eigen::RowMajor>& TM = TransformationMatrix(alpha, beta);
+	matRotatedStressModulus = matLocalModulus * TM.transpose();
+	return matRotatedStressModulus;
     }
     
     virtual ~OrthotropicMaterial() = default;
@@ -342,6 +358,79 @@ public:
     }
 }; // class
 
+class RotatedStressElasticModulus : public dolfin::Expression
+{
+private:
+    const std::vector<std::shared_ptr<const Material>> matsLibrary;
+    const std::shared_ptr<const dolfin::MeshFunction<std::size_t>> material_id;
+    const std::shared_ptr<const dolfin::MeshFunction<double>> plane_orientation;
+    const std::shared_ptr<const dolfin::MeshFunction<double>> fiber_orientation;
+
+public:
+    RotatedStressElasticModulus& operator=(RotatedStressElasticModulus&) = delete;  // Disallow copying
+    RotatedStressElasticModulus(const RotatedStressElasticModulus&) = delete;
+
+    // Constructor.
+    RotatedStressElasticModulus(
+	const std::vector<std::shared_ptr<const Material>> _matsLibrary, 
+	const std::shared_ptr<const dolfin::MeshFunction<std::size_t>> _material_id,
+	const std::shared_ptr<const dolfin::MeshFunction<double>> _plane_orientation,
+	const std::shared_ptr<const dolfin::MeshFunction<double>> _fiber_orientation) : 
+		dolfin::Expression(36),
+		matsLibrary(_matsLibrary),
+		material_id(_material_id),
+		plane_orientation(_plane_orientation),
+		fiber_orientation(_fiber_orientation)
+    {}
+
+    // Eval at every cell.
+    void eval(Eigen::Ref<Eigen::VectorXd> values, const Eigen::Ref<const Eigen::VectorXd> x, const ufc::cell& c) const override
+    {
+        size_t mat_id = (*material_id)[c.index];
+        double alpha = (*plane_orientation)[c.index];
+        double beta = (*fiber_orientation)[c.index];
+        auto transformedStiffness = matsLibrary[mat_id]->ComputeRotatedStressElasticModulus(alpha, beta);
+
+        // Assign elsticity matrix to local vertex values.
+        values(0) = transformedStiffness(0, 0);
+        values(1) = transformedStiffness(0, 1);
+        values(2) = transformedStiffness(0, 2);
+        values(3) = transformedStiffness(0, 3);
+        values(4) = transformedStiffness(0, 4);
+        values(5) = transformedStiffness(0, 5);
+        values(6) = transformedStiffness(1, 0);
+        values(7) = transformedStiffness(1, 1);
+        values(8) = transformedStiffness(1, 2);
+        values(9) = transformedStiffness(1, 3);
+        values(10) = transformedStiffness(1, 4);
+        values(11) = transformedStiffness(1, 5);
+        values(12) = transformedStiffness(2, 0);
+        values(13) = transformedStiffness(2, 1);
+        values(14) = transformedStiffness(2, 2);
+        values(15) = transformedStiffness(2, 3);
+        values(16) = transformedStiffness(2, 4);
+        values(17) = transformedStiffness(2, 5);
+        values(18) = transformedStiffness(3, 0);
+        values(19) = transformedStiffness(3, 1);
+        values(20) = transformedStiffness(3, 2);
+        values(21) = transformedStiffness(3, 3);
+        values(22) = transformedStiffness(3, 4);
+        values(23) = transformedStiffness(3, 5);
+        values(24) = transformedStiffness(4, 0);
+        values(25) = transformedStiffness(4, 1);
+        values(26) = transformedStiffness(4, 2);
+        values(27) = transformedStiffness(4, 3);
+        values(28) = transformedStiffness(4, 4);
+        values(29) = transformedStiffness(4, 5);
+        values(30) = transformedStiffness(5, 0);
+        values(31) = transformedStiffness(5, 1);
+        values(32) = transformedStiffness(5, 2);
+        values(33) = transformedStiffness(5, 3);
+        values(34) = transformedStiffness(5, 4);
+        values(35) = transformedStiffness(5, 5);
+    }
+}; // class
+
 class MaterialDensity : public dolfin::Expression
 {
 private:
@@ -370,6 +459,7 @@ public:
         values(0) = matsLibrary[mat_id]->Rho();
     }
 }; // class
+
 
 } // namespace anba
 
@@ -404,6 +494,14 @@ PYBIND11_MODULE(SIGNATURE, m)
       (m, "ElasticModulus", "ElasticModulus expression")
     .def(pybind11::init<const std::vector<std::shared_ptr<const anba::Material>>, 
     	const std::shared_ptr<const dolfin::MeshFunction<std::size_t>>,
+	const std::shared_ptr<const dolfin::MeshFunction<double>>,
+	const std::shared_ptr<const dolfin::MeshFunction<double>>>()
+    );
+
+    pybind11::class_<anba::RotatedStressElasticModulus, std::shared_ptr<anba::RotatedStressElasticModulus>, dolfin::Expression>
+      (m, "RotatedStressElasticModulus", "RotatedStressElasticModulus expression")
+    .def(pybind11::init<const std::vector<std::shared_ptr<const anba::Material>>,
+	const std::shared_ptr<const dolfin::MeshFunction<std::size_t>>,
 	const std::shared_ptr<const dolfin::MeshFunction<double>>,
 	const std::shared_ptr<const dolfin::MeshFunction<double>>>()
     );

@@ -24,7 +24,9 @@
 from dolfin import *
 from petsc4py import PETSc
 
-from anba4.voight_notation import stressVectorToStressTensor, stressTensorToStressVector, strainVectorToStrainTensor, strainTensorToStrainVector
+from anba4.voight_notation import stressVectorToStressTensor, \
+    stressTensorToStressVector, stressTensorToParaviewStressVector, \
+    strainVectorToStrainTensor, strainTensorToStrainVector
 from anba4 import material
 
 class anbax():
@@ -37,6 +39,15 @@ class anbax():
         self.plane_orientations = plane_orientations
         self.modulus = CompiledExpression(
             material.ElasticModulus(
+                self.matLibrary,
+                self.materials,
+                self.plane_orientations,
+                self.fiber_orientations
+            ),
+            degree=0
+        )
+        self.RotatedStress_modulus = CompiledExpression(
+            material.RotatedStressElasticModulus(
                 self.matLibrary,
                 self.materials,
                 self.plane_orientations,
@@ -68,6 +79,10 @@ class anbax():
         (self.RV3F, self.RV3M) = TestFunctions(R3R3)
         (self.RT3F, self.RT3M) = TrialFunctions(R3R3)
 
+        #STRESS_ELEMENT = TensorElement("DG", self.mesh.ufl_cell(), 0, (3, 3))
+        STRESS_ELEMENT = VectorElement("DG", self.mesh.ufl_cell(), 0, 6)
+        STRESS_FS = FunctionSpace(self.mesh, STRESS_ELEMENT)
+        self.STRESS = Function(STRESS_FS, name = "stress tensor")
 
         #Lagrange multipliers needed to impose the BCs
         R4_ELEMENT = VectorElement("R", self.mesh.ufl_cell(), 0, 4)
@@ -152,7 +167,7 @@ class anbax():
         return Mass
 
     def compute(self):
-        stress = self.sigma(self.U, self.UP)
+        stress = self.Sigma(self.U, self.UP)
         stress_n = stress[:,2]
         stress_1 = stress[:,0]
         stress_2 = stress[:,1]
@@ -256,17 +271,17 @@ class anbax():
         S = PETSc.Mat().createDense([6, 6])
         S.setPreallocationDense(None)
 
-        B = PETSc.Mat().createDense([6, 6])
-        B.setPreallocationDense(None)
+        self.B = PETSc.Mat().createDense([6, 6])
+        self.B.setPreallocationDense(None)
 
-        G = PETSc.Mat().createDense([6, 6])
-        G.setPreallocationDense(None)
+        self.G = PETSc.Mat().createDense([6, 6])
+        self.G.setPreallocationDense(None)
 
         g = PETSc.Vec().createMPI(6)
         b = PETSc.Vec().createMPI(6)
 
-        Stiff = PETSc.Mat().createDense([6, 6])
-        Stiff.setPreallocationDense(None)
+        self.Stiff = PETSc.Mat().createDense([6, 6])
+        self.Stiff.setPreallocationDense(None)
 
 
 
@@ -291,38 +306,49 @@ class anbax():
                 for c in range(6):
                     S.setValues(row, c, as_backend_type(self.chains[i][ll-1-k].vector()).vec().dot(row1_col[c]) +
                         as_backend_type(self.chains[i][ll-k].vector()).vec().dot(row2_col[c]))
-                B.setValues(row, range(6), as_backend_type(L * self.chains[i][ll-1-k].vector() + R * self.chains[i][ll-k].vector()).vec())
+                self.B.setValues(row, range(6), as_backend_type(L * self.chains[i][ll-1-k].vector() + R * self.chains[i][ll-k].vector()).vec())
 
         S.assemble()
-        B.assemble()
+        self.B.assemble()
 
         ksp = PETSc.KSP()
         ksp.create()
         ksp.setOperators(S)
+        ksp.setType(ksp.Type.PREONLY)   # Just use the preconditioner without a Krylov method
+        pc = ksp.getPC()                # Preconditioner
+        pc.setType(pc.Type.LU)          # Use a direct solve
 
 
         for i in range(6):
-            ksp.solve(B.getColumnVector(i), g)
-            G.setValues(range(6), i, g)
+            ksp.solve(self.B.getColumnVector(i), g)
+            self.G.setValues(range(6), i, g)
 
-        G.assemble()
+        self.G.assemble()
 
-        G.transposeMatMult(S, B)
-        B.matMult(G, Stiff)
+        self.G.transposeMatMult(S, self.B)
+        self.B.matMult(self.G, self.Stiff)
         
-        return Stiff
-        
-    def sigma(self, u, up):
+        return self.Stiff
+
+    def Sigma(self, u, up):
+        "Return second Piola–Kirchhoff stress tensor."
+        return self.sigma_helper(u, up, self.modulus)
+
+    def RotatedSigma(self, u, up):
+        "Return second Piola–Kirchhoff stress tensor."
+        return self.sigma_helper(u, up, self.RotatedStress_modulus)
+
+    def sigma_helper(self, u, up, mod):
         "Return second Piola–Kirchhoff stress tensor."
         et = self.epsilon(u, up)
         ev = strainTensorToStrainVector(et)
 #         elasticMatrix = self.modulus
-        elasticMatrix = as_matrix(((self.modulus[0],self.modulus[1],self.modulus[2],self.modulus[3],self.modulus[4],self.modulus[5]),\
-                                   (self.modulus[6],self.modulus[7],self.modulus[8],self.modulus[9],self.modulus[10],self.modulus[11]),\
-                                   (self.modulus[12],self.modulus[13],self.modulus[14],self.modulus[15],self.modulus[16],self.modulus[17]),\
-                                   (self.modulus[18],self.modulus[19],self.modulus[20],self.modulus[21],self.modulus[22],self.modulus[23]),\
-                                   (self.modulus[24],self.modulus[25],self.modulus[26],self.modulus[27],self.modulus[28],self.modulus[29]),\
-                                   (self.modulus[30],self.modulus[31],self.modulus[32],self.modulus[33],self.modulus[34],self.modulus[35])))
+        elasticMatrix = as_matrix(((mod[0],mod[1],mod[2],mod[3],mod[4],mod[5]),\
+                                   (mod[6],mod[7],mod[8],mod[9],mod[10],mod[11]),\
+                                   (mod[12],mod[13],mod[14],mod[15],mod[16],mod[17]),\
+                                   (mod[18],mod[19],mod[20],mod[21],mod[22],mod[23]),\
+                                   (mod[24],mod[25],mod[26],mod[27],mod[28],mod[29]),\
+                                   (mod[30],mod[31],mod[32],mod[33],mod[34],mod[35])))
         sv = elasticMatrix * ev
         st = stressVectorToStressTensor(sv)
         return st
@@ -340,3 +366,61 @@ class anbax():
     def pos3d(self, POS):
         "Return node coordinates Vector."
         return as_vector([POS[0], POS[1], 0.])
+
+    def local_project(self, v, V, u=None):
+        """Element-wise projection using LocalSolver"""
+        dv = TrialFunction(V)
+        v_ = TestFunction(V)
+        a_proj = inner(dv, v_)*dx
+        b_proj = inner(v, v_)*dx
+        solver = LocalSolver(a_proj, b_proj)
+        solver.factorize()
+        if u is None:
+            u = Function(V)
+            solver.solve_local_rhs(u)
+            return u
+        else:
+            solver.solve_local_rhs(u)
+            return
+
+    def stress_field(self, force, moment, reference = "local", voigt_convention = "anba"):
+        if reference == "local":
+            stress_comp = self.RotatedSigma
+        elif reference == "global":
+            stress_comp = self.Sigma
+        else:
+            raise ValueError('reference argument should be equal to either to\"local\" or to "global", got \"' + reference + '\" instead')
+        if voigt_convention == "anba":
+            vector_conversion = stressTensorToStressVector
+        elif voigt_convention == "paraview":
+            vector_conversion = stressTensorToParaviewStressVector
+        else:
+            raise ValueError('voigt_convention argument should be equal to either to\"anba\" or to "paraview", got \"' + voigt_convention + '\" instead')
+
+        eigensol_magnitudes = PETSc.Vec().createMPI(6)
+
+        AzInt = PETSc.Vec().createMPI(6)
+
+        AzInt.setValues(range(3), force)
+        AzInt.setValues(range(3, 6), moment)
+        
+        ksp = PETSc.KSP()
+        ksp.create()
+        ksp.setOperators(self.B)
+        ksp.setType(ksp.Type.PREONLY)   # Just use the preconditioner without a Krylov method
+        pc = ksp.getPC()                # Preconditioner
+        pc.setType(pc.Type.LU)          # Use a direct solve
+        
+        ksp.solve(AzInt, eigensol_magnitudes)
+        
+        self.UL.vector()[:] = 0.
+        self.ULP.vector()[:] = 0.
+        row = -1
+        for i in range(4):
+            ll = len(self.chains[i])
+            for k in range(ll//2, 0, -1):
+                row = row + 1
+                self.UL.vector()[:] += self.chains[i][ll-k].vector() * eigensol_magnitudes[row]
+                self.ULP.vector()[:] += self.chains[i][ll-1-k].vector() * eigensol_magnitudes[row]
+        self.local_project(vector_conversion(stress_comp(self.U, self.UP)), self.STRESS.ufl_function_space(), self.STRESS)
+#        self.local_project(stress_comp(self.U, self.UP), self.STRESS.ufl_function_space(), self.STRESS)

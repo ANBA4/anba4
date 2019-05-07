@@ -49,7 +49,7 @@ plane_orientations = MeshFunction("double", mesh, mesh.topology().dim())
 
 materials.set_all(0)
 fiber_orientations.set_all(0.0)
-plane_orientations.set_all(0.0)
+plane_orientations.set_all(90.0)
 
 # Build material property library.
 mat1 = material.IsotropicMaterial(matMechanicProp, 1.)
@@ -64,3 +64,11 @@ stiff.view()
 
 mass = anba.inertia()
 mass.view()
+
+stress_result_file = XDMFFile('Stress.xdmf')
+stress_result_file.parameters['functions_share_mesh'] = True
+stress_result_file.parameters['rewrite_function_mesh'] = False
+stress_result_file.parameters["flush_output"] = True
+
+anba.stress_field([1., 0., 0.,], [0., 0., 0.], "global", "paraview")
+stress_result_file.write(anba.STRESS, t = 0.)

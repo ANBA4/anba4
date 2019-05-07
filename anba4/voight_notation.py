@@ -33,6 +33,10 @@ def stressTensorToStressVector(st):
     "Transform a stress tensor to stress contracted stress vector."
     return as_vector([st[0,0], st[1,1], st[2,2], st[1,2], st[0,2], st[0,1]])
 
+def stressTensorToParaviewStressVector(st):
+    "Transform a stress tensor to stress contracted stress vector."
+    return as_vector([st[0,0], st[1,1], st[2,2], st[0,1], st[1,2], st[0,2]])
+
 def strainVectorToStrainTensor(ev):
     "Transform a engeering strain to strain vector."
     return as_tensor([[ev[0], 0.5*ev[5], 0.5*ev[4]], [0.5*ev[5], ev[1], 0.5*ev[3]], [0.5*ev[4],0.5*ev[3],ev[2]]])
