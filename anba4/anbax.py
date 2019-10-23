@@ -160,10 +160,13 @@ class anbax():
         Mf += dot(self.RV3F, cross(self.pos3d(self.POS), self.RT3M)) * self.density[0] * dx
         Mf += dot(cross(self.pos3d(self.POS), self.RV3F), self.RT3M) * self.density[0] * dx
         Mf += dot(cross(self.pos3d(self.POS), self.RV3M), cross(self.pos3d(self.POS), self.RT3M)) * self.density[0] * dx
-        M = as_backend_type(assemble(Mf)).mat()
-        Mass = PETSc.Mat().createDense([6, 6])
-        Mass.setPreallocationDense(None)
-        M.copy(Mass)
+        MM = assemble(Mf)
+        M = as_backend_type(MM).mat()
+        Mass = PETSc.Mat()#.createDense([6, 6])
+        #Mass.setUp()
+        #Mass.view()
+        #M.copy(Mass, PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
+        M.convert('dense', Mass)
         return Mass
 
     def compute(self):
@@ -269,19 +272,19 @@ class anbax():
         C_p = as_backend_type(C).mat()
         E_p = as_backend_type(E).mat()
         S = PETSc.Mat().createDense([6, 6])
-        S.setPreallocationDense(None)
+        S.setUp()
 
         self.B = PETSc.Mat().createDense([6, 6])
-        self.B.setPreallocationDense(None)
+        self.B.setUp()
 
         self.G = PETSc.Mat().createDense([6, 6])
-        self.G.setPreallocationDense(None)
+        self.G.setUp()
 
         g = PETSc.Vec().createMPI(6)
         b = PETSc.Vec().createMPI(6)
 
         self.Stiff = PETSc.Mat().createDense([6, 6])
-        self.Stiff.setPreallocationDense(None)
+        self.Stiff.setUp()
 
 
 
