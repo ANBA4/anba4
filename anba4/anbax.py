@@ -24,6 +24,8 @@
 from dolfin import *
 from petsc4py import PETSc
 
+import numpy as np
+
 from anba4.voight_notation import stressVectorToStressTensor, \
     stressTensorToStressVector, stressTensorToParaviewStressVector, \
     strainVectorToStrainTensor, strainTensorToStrainVector
@@ -157,8 +159,8 @@ class anbax():
 
     def inertia(self):
         Mf  = dot(self.RV3F, self.RT3F) * self.density[0] * dx
-        Mf += dot(self.RV3F, cross(self.pos3d(self.POS), self.RT3M)) * self.density[0] * dx
-        Mf += dot(cross(self.pos3d(self.POS), self.RV3F), self.RT3M) * self.density[0] * dx
+        Mf -= dot(self.RV3F, cross(self.pos3d(self.POS), self.RT3M)) * self.density[0] * dx
+        Mf -= dot(cross(self.pos3d(self.POS), self.RV3M), self.RT3F) * self.density[0] * dx
         Mf += dot(cross(self.pos3d(self.POS), self.RV3M), cross(self.pos3d(self.POS), self.RT3M)) * self.density[0] * dx
         MM = assemble(Mf)
         M = as_backend_type(MM).mat()
@@ -208,41 +210,71 @@ class anbax():
         R_f = derivative(S, self.U, self.UT)
         R = assemble(R_f)
 
-        resk = []
+        maxres = 0.
+        for i in range(4):
+            tmp = E*self.chains[i][0].vector()
+            maxres = max(maxres, sqrt(tmp.inner(tmp)))
+        for i in [2, 3]:
+            tmp = -(H*self.chains[i][0].vector()) -(E * self.chains[i][1].vector())
+            maxres = max(maxres, sqrt(tmp.inner(tmp)))
+
+        if maxres > 1.E-16:
+            scaling_factor = 1.E-16 / maxres;
+        else:
+            scaling_factor = 1.
+
+        for i in range(4):
+            self.chains[i][0].vector()[:] = self.chains[i][0].vector() * scaling_factor
+        for i in [2, 3]:
+            self.chains[i][1].vector()[:] = self.chains[i][1].vector() * scaling_factor
+        for i in range(4):
+            tmp = E*self.chains[i][0].vector()
+            maxres = max(maxres, sqrt(tmp.inner(tmp)))
+        for i in [2, 3]:
+            tmp = -(H*self.chains[i][0].vector()) -(E * self.chains[i][1].vector())
+            maxres = max(maxres, sqrt(tmp.inner(tmp)))
+
         # solve E d1 = -H d0
         for i in range(2):
-            solve(E, self.chains[i][1].vector(), -(H*self.chains[i][0].vector()))
-#             for k in range(4):
-#                 c = (self.chains[i][1].vector().inner(self.chains[k][0].vector())) / (self.chains[k][0].vector().inner(self.chains[k][0].vector()))
-#                 self.chains[i][1].vector()[:] -= c * self.chains[k][0].vector()
-#             #(ou1, ol1) = chains[i][1].split(True)
-            res = -(H*self.chains[i][1].vector())+(M*self.chains[i][0].vector())
-            resk.append(res.inner(self.chains[i][0].vector()))
+            rhs = -(H*self.chains[i][0].vector())
+            self.null_space.orthogonalize(rhs)
+            solve(E, self.chains[i][1].vector(), rhs)
+            self.null_space.orthogonalize(self.chains[i][1].vector())
 
 
         # solve E d2 = M d0 - H d1
         for i in [2, 3]:
-#             rhs = -(H*self.chains[i][1].vector())+(M*self.chains[i][0].vector())
-#             for j in range(2):
-#                 mul = rhs.inner(self.chains[j][0].vector())
-#                 self.chains[i][0].vector()[:] -= self.chains[j][0].vector() * (mul / resk[j])
-#                 self.chains[i][1].vector()[:] -= self.chains[j][1].vector() * (mul / resk[j])
-            solve(E, self.chains[i][2].vector(), -(H*self.chains[i][1].vector())+(M*self.chains[i][0].vector()))
-            for k in range(4):
-                c = (self.chains[i][2].vector().inner(self.chains[k][0].vector())) / (self.chains[k][0].vector().inner(self.chains[k][0].vector()))
-                self.chains[i][2].vector()[:] -= c * self.chains[k][0].vector()
+            rhs = -(H*self.chains[i][1].vector())+(M*self.chains[i][0].vector())
+            self.null_space.orthogonalize(rhs)
+            solve(E, self.chains[i][2].vector(), rhs)
+            self.null_space.orthogonalize(self.chains[i][2].vector())
 
-#             rhs = -(H*self.chains[i][2].vector())+(M*self.chains[i][1].vector())
-#             for j in range(2):
-#                 mul = rhs.inner(self.chains[j][0].vector())
-#                 self.chains[i][1].vector()[:] -= self.chains[j][0].vector() * (mul / resk[j])
-#                 self.chains[i][2].vector()[:] -= self.chains[j][1].vector() * (mul / resk[j])
-            solve(E, self.chains[i][3].vector(), -(H*self.chains[i][2].vector())+(M*self.chains[i][1].vector()))
-            for k in range(4):
-                c = (self.chains[i][3].vector().inner(self.chains[k][0].vector())) / (self.chains[k][0].vector().inner(self.chains[k][0].vector()))
-                self.chains[i][3].vector()[:] -= c * self.chains[k][0].vector()
+        a = np.zeros((2,2))
+        b = np.zeros((2,1))
+        for i in [2, 3]:
+            res = -(H*self.chains[i][2].vector())+(M*self.chains[i][1].vector())
+            for k in range(2):
+                b[k] = res.inner(self.chains[k][0].vector())
+                for ii in range(2):
+                    #a[ii, k] = (-(H*self.chains[ii][0].vector())).inner(self.chains[k][0].vector()) / normk
+                    a[k, ii] = (-(H*self.chains[ii][1].vector())+(M*self.chains[ii][0].vector())).inner(self.chains[k][0].vector())
+            x = np.linalg.solve(a, b)
+            for ii in range(2):
+                self.chains[i][2].vector()[:] -= x[ii] * self.chains[ii][1].vector()
+                self.chains[i][1].vector()[:] -= x[ii] * self.chains[ii][0].vector()
+
+        for i in [2, 3]:
+            rhs = -(H*self.chains[i][2].vector())+(M*self.chains[i][1].vector())
+            self.null_space.orthogonalize(rhs)
+            solve(E, self.chains[i][3].vector(), rhs)
+            self.null_space.orthogonalize(self.chains[i][3].vector())
 
         # solve E d3 = M d1 - H d2
+        for i in range(4):
+            print("\nChain "+ str(i) +":")
+            for k in range(len(self.chains[i])//2, len(self.chains[i])):
+                print("(d" + str(k) + ", d" + str(k)+ ") = ", assemble(inner(self.chains_d[i][k], self.chains_d[i][k]) * dx))
+                print("(l" + str(k) + ", l" + str(k)+ ") = ", assemble(inner(self.chains_l[i][k], self.chains_l[i][k]) * dx))
         for i in range(4):
             for k in range(len(self.chains[i])//2, len(self.chains[i])):
                 (d0p, l0p) = self.chains[i][k].split(True)
