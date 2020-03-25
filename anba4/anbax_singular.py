@@ -118,15 +118,15 @@ class anbax_singular():
         for i in range(4):
             self.chains[i][0].interpolate(self.base_chains_expression[i])
         # keep torsion independent from translation
-#         for i in [0, 2, 3]:
-#             k = (self.chains[1][0].vector().inner(self.chains[i][0].vector())) / (self.chains[i][0].vector().inner(self.chains[i][0].vector()))
-#             self.chains[1][0].vector()[:] -= k * self.chains[i][0].vector()
+        for i in [0, 2, 3]:
+            k = (self.chains[1][0].vector().inner(self.chains[i][0].vector())) / (self.chains[i][0].vector().inner(self.chains[i][0].vector()))
+            self.chains[1][0].vector()[:] -= k * self.chains[i][0].vector()
         self.null_space = VectorSpaceBasis([self.chains[i][0].vector() for i in range(4)])
 
         # initialize linear chains
         for i in range(2,4):
             self.chains[i][1].interpolate(self.linear_chains_expression[i-2])
-#             self.null_space.orthogonalize(self.chains[i][1].vector());
+            self.null_space.orthogonalize(self.chains[i][1].vector());
 #            for k in range(4):
 #	            c = (self.chains[i][1].vector().inner(self.chains[k][0].vector())) / (self.chains[k][0].vector().inner(self.chains[k][0].vector()))
 #	            self.chains[i][1].vector()[:] -= c * self.chains[k][0].vector()
@@ -134,7 +134,7 @@ class anbax_singular():
     def inertia(self):
         Mf  = dot(self.RV3F, self.RT3F) * self.density[0] * dx
         Mf += dot(self.RV3F, cross(self.pos3d(self.POS), self.RT3M)) * self.density[0] * dx
-        Mf += dot(cross(self.pos3d(self.POS), self.RV3F), self.RT3M) * self.density[0] * dx
+        Mf += dot(cross(self.pos3d(self.POS), self.RV3M), self.RT3F) * self.density[0] * dx
         Mf += dot(cross(self.pos3d(self.POS), self.RV3M), cross(self.pos3d(self.POS), self.RT3M)) * self.density[0] * dx
         MM = assemble(Mf)
         M = as_backend_type(MM).mat()
@@ -178,8 +178,8 @@ class anbax_singular():
 
         solver = PETScKrylovSolver("cg")
         solver.parameters["relative_tolerance"] = 1.E-10
-#        solver.parameters["absolute_tolerance"] = 1.E-16
-#        solver.parameters["convergence_norm_type"] = "natural"
+        solver.parameters["absolute_tolerance"] = 1.E-16
+        solver.parameters["convergence_norm_type"] = "natural"
 #        solver.parameters["monitor_convergence"] = True
         solver.set_operator(E)
         as_backend_type(E).set_nullspace(self.null_space)
@@ -224,10 +224,10 @@ class anbax_singular():
             self.null_space.orthogonalize(self.b.vector());
             print('Solving ',i)
             solver.solve(E, self.chains[i][1].vector(), self.b.vector())
-#             self.null_space.orthogonalize(self.chains[i][1].vector());
-            for k in range(4):
-                c = (self.chains[i][1].vector().inner(self.chains[k][0].vector())) / (self.chains[k][0].vector().inner(self.chains[k][0].vector()))
-                self.chains[i][1].vector()[:] -= c * self.chains[k][0].vector()
+            self.null_space.orthogonalize(self.chains[i][1].vector());
+#            for k in range(4):
+#                c = (self.chains[i][1].vector().inner(self.chains[k][0].vector())) / (self.chains[k][0].vector().inner(self.chains[k][0].vector()))
+#                self.chains[i][1].vector()[:] -= c * self.chains[k][0].vector()
             res = -(H*self.chains[i][1].vector())+(M*self.chains[i][0].vector())
             resk.append(res.inner(self.chains[i][0].vector()))
 
@@ -263,7 +263,7 @@ class anbax_singular():
             print('Solving ',i,1)
             self.b.vector()[:] = -(H*self.chains[i][2].vector())+(M*self.chains[i][1].vector())
             solver.solve(E, self.chains[i][3].vector(), self.b.vector())
-#             self.null_space.orthogonalize(self.chains[i][3].vector());
+            self.null_space.orthogonalize(self.chains[i][3].vector());
             for k in range(4):
                 c = (self.chains[i][3].vector().inner(self.chains[k][0].vector())) / (self.chains[k][0].vector().inner(self.chains[k][0].vector()))
                 self.chains[i][3].vector()[:] -= c * self.chains[k][0].vector()
