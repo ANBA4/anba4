@@ -431,6 +431,79 @@ public:
     }
 }; // class
 
+class TransformationMatrix : public dolfin::Expression
+{
+private:
+    const std::vector<std::shared_ptr<const Material>> matsLibrary;
+    const std::shared_ptr<const dolfin::MeshFunction<std::size_t>> material_id;
+    const std::shared_ptr<const dolfin::MeshFunction<double>> plane_orientation;
+    const std::shared_ptr<const dolfin::MeshFunction<double>> fiber_orientation;
+
+public:
+    TransformationMatrix& operator=(TransformationMatrix&) = delete;  // Disallow copying
+    TransformationMatrix(const TransformationMatrix&) = delete;
+
+    // Constructor.
+    TransformationMatrix(
+	const std::vector<std::shared_ptr<const Material>> _matsLibrary,
+	const std::shared_ptr<const dolfin::MeshFunction<std::size_t>> _material_id,
+	const std::shared_ptr<const dolfin::MeshFunction<double>> _plane_orientation,
+	const std::shared_ptr<const dolfin::MeshFunction<double>> _fiber_orientation) :
+		dolfin::Expression(36),
+		matsLibrary(_matsLibrary),
+		material_id(_material_id),
+		plane_orientation(_plane_orientation),
+		fiber_orientation(_fiber_orientation)
+    {}
+
+    // Eval at every cell.
+    void eval(Eigen::Ref<Eigen::VectorXd> values, const Eigen::Ref<const Eigen::VectorXd> x, const ufc::cell& c) const override
+    {
+        size_t mat_id = (*material_id)[c.index];
+        double alpha = (*plane_orientation)[c.index];
+        double beta = (*fiber_orientation)[c.index];
+        auto rotMatrix = matsLibrary[mat_id]->TransformationMatrix(alpha, beta);
+
+        // Assign elsticity matrix to local vertex values.
+        values(0) = rotMatrix(0, 0);
+        values(1) = rotMatrix(0, 1);
+        values(2) = rotMatrix(0, 2);
+        values(3) = rotMatrix(0, 3);
+        values(4) = rotMatrix(0, 4);
+        values(5) = rotMatrix(0, 5);
+        values(6) = rotMatrix(1, 0);
+        values(7) = rotMatrix(1, 1);
+        values(8) = rotMatrix(1, 2);
+        values(9) = rotMatrix(1, 3);
+        values(10) = rotMatrix(1, 4);
+        values(11) = rotMatrix(1, 5);
+        values(12) = rotMatrix(2, 0);
+        values(13) = rotMatrix(2, 1);
+        values(14) = rotMatrix(2, 2);
+        values(15) = rotMatrix(2, 3);
+        values(16) = rotMatrix(2, 4);
+        values(17) = rotMatrix(2, 5);
+        values(18) = rotMatrix(3, 0);
+        values(19) = rotMatrix(3, 1);
+        values(20) = rotMatrix(3, 2);
+        values(21) = rotMatrix(3, 3);
+        values(22) = rotMatrix(3, 4);
+        values(23) = rotMatrix(3, 5);
+        values(24) = rotMatrix(4, 0);
+        values(25) = rotMatrix(4, 1);
+        values(26) = rotMatrix(4, 2);
+        values(27) = rotMatrix(4, 3);
+        values(28) = rotMatrix(4, 4);
+        values(29) = rotMatrix(4, 5);
+        values(30) = rotMatrix(5, 0);
+        values(31) = rotMatrix(5, 1);
+        values(32) = rotMatrix(5, 2);
+        values(33) = rotMatrix(5, 3);
+        values(34) = rotMatrix(5, 4);
+        values(35) = rotMatrix(5, 5);
+    }
+}; // class
+
 class MaterialDensity : public dolfin::Expression
 {
 private:
@@ -500,6 +573,14 @@ PYBIND11_MODULE(SIGNATURE, m)
 
     pybind11::class_<anba::RotatedStressElasticModulus, std::shared_ptr<anba::RotatedStressElasticModulus>, dolfin::Expression>
       (m, "RotatedStressElasticModulus", "RotatedStressElasticModulus expression")
+    .def(pybind11::init<const std::vector<std::shared_ptr<const anba::Material>>,
+	const std::shared_ptr<const dolfin::MeshFunction<std::size_t>>,
+	const std::shared_ptr<const dolfin::MeshFunction<double>>,
+	const std::shared_ptr<const dolfin::MeshFunction<double>>>()
+    );
+
+    pybind11::class_<anba::TransformationMatrix, std::shared_ptr<anba::TransformationMatrix>, dolfin::Expression>
+      (m, "TransformationMatrix", "TransformationMatrix expression")
     .def(pybind11::init<const std::vector<std::shared_ptr<const anba::Material>>,
 	const std::shared_ptr<const dolfin::MeshFunction<std::size_t>>,
 	const std::shared_ptr<const dolfin::MeshFunction<double>>,

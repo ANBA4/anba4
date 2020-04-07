@@ -28,7 +28,7 @@ import numpy as np
 
 from anba4.voight_notation import stressVectorToStressTensor, \
     stressTensorToStressVector, stressTensorToParaviewStressVector, \
-    strainVectorToStrainTensor, strainTensorToStrainVector
+    strainVectorToStrainTensor, strainTensorToStrainVector, strainTensorToParaviewStrainVector
 from anba4 import material
 
 class anbax():
@@ -50,6 +50,15 @@ class anbax():
         )
         self.RotatedStress_modulus = CompiledExpression(
             material.RotatedStressElasticModulus(
+                self.matLibrary,
+                self.materials,
+                self.plane_orientations,
+                self.fiber_orientations
+            ),
+            degree=0
+        )
+        self.MaterialRotation_matrix = CompiledExpression(
+            material.TransformationMatrix(
                 self.matLibrary,
                 self.materials,
                 self.plane_orientations,
@@ -85,6 +94,7 @@ class anbax():
         STRESS_ELEMENT = VectorElement("DG", self.mesh.ufl_cell(), 0, 6)
         STRESS_FS = FunctionSpace(self.mesh, STRESS_ELEMENT)
         self.STRESS = Function(STRESS_FS, name = "stress tensor")
+        self.STRAIN = Function(STRESS_FS, name = "strain tensor")
 
         #Lagrange multipliers needed to impose the BCs
         R4_ELEMENT = VectorElement("R", self.mesh.ufl_cell(), 0, 4)
@@ -393,6 +403,19 @@ class anbax():
         g3 = self.grad3d(u, up)
         return 0.5*(g3.T + g3)
 
+    def rotated_epsilon(self, u, up):
+        "Return symmetric 3D infinitesimal strain tensor rotated into material reference."
+        eps = self.epsilon(u, up)
+        rot = self.MaterialRotation_matrix
+        rotMatrix = as_matrix(((    rot[0], rot[1], rot[2], rot[3], rot[4], rot[5]),\
+                                   (rot[6], rot[7], rot[8], rot[9], rot[10],rot[11]),\
+                                   (rot[12],rot[13],rot[14],rot[15],rot[16],rot[17]),\
+                                   (rot[18],rot[19],rot[20],rot[21],rot[22],rot[23]),\
+                                   (rot[24],rot[25],rot[26],rot[27],rot[28],rot[29]),\
+                                   (rot[30],rot[31],rot[32],rot[33],rot[34],rot[35])))
+        roteps = strainVectorToStrainTensor(rotMatrix.T * strainTensorToStrainVector(eps))
+        return roteps
+
     def grad3d(self, u, up):
         "Return 3d gradient."
         g = grad(u)
@@ -458,4 +481,46 @@ class anbax():
                 self.UL.vector()[:] += self.chains[i][ll-k].vector() * eigensol_magnitudes[row]
                 self.ULP.vector()[:] += self.chains[i][ll-1-k].vector() * eigensol_magnitudes[row]
         self.local_project(vector_conversion(stress_comp(self.U, self.UP)), self.STRESS.ufl_function_space(), self.STRESS)
+#        self.local_project(stress_comp(self.U, self.UP), self.STRESS.ufl_function_space(), self.STRESS)
+
+    def strain_field(self, force, moment, reference = "local", voigt_convention = "anba"):
+        if reference == "local":
+            strain_comp = self.rotated_epsilon
+        elif reference == "global":
+            strain_comp = self.epsilon
+        else:
+            raise ValueError('reference argument should be equal to either to\"local\" or to "global", got \"' + reference + '\" instead')
+        if voigt_convention == "anba":
+            vector_conversion = strainTensorToStrainVector
+        elif voigt_convention == "paraview":
+            vector_conversion = strainTensorToParaviewStrainVector
+        else:
+            raise ValueError('voigt_convention argument should be equal to either to\"anba\" or to "paraview", got \"' + voigt_convention + '\" instead')
+
+        eigensol_magnitudes = PETSc.Vec().createMPI(6)
+
+        AzInt = PETSc.Vec().createMPI(6)
+
+        AzInt.setValues(range(3), force)
+        AzInt.setValues(range(3, 6), moment)
+
+        ksp = PETSc.KSP()
+        ksp.create()
+        ksp.setOperators(self.B)
+        ksp.setType(ksp.Type.PREONLY)   # Just use the preconditioner without a Krylov method
+        pc = ksp.getPC()                # Preconditioner
+        pc.setType(pc.Type.LU)          # Use a direct solve
+
+        ksp.solve(AzInt, eigensol_magnitudes)
+
+        self.UL.vector()[:] = 0.
+        self.ULP.vector()[:] = 0.
+        row = -1
+        for i in range(4):
+            ll = len(self.chains[i])
+            for k in range(ll//2, 0, -1):
+                row = row + 1
+                self.UL.vector()[:] += self.chains[i][ll-k].vector() * eigensol_magnitudes[row]
+                self.ULP.vector()[:] += self.chains[i][ll-1-k].vector() * eigensol_magnitudes[row]
+        self.local_project(vector_conversion(strain_comp(self.U, self.UP)), self.STRAIN.ufl_function_space(), self.STRAIN)
 #        self.local_project(stress_comp(self.U, self.UP), self.STRESS.ufl_function_space(), self.STRESS)

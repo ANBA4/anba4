@@ -44,3 +44,7 @@ def strainVectorToStrainTensor(ev):
 def strainTensorToStrainVector(et):
     "Transform a strain tensor to engeering strain."
     return as_vector([et[0,0], et[1,1], et[2,2], 2.0*et[1,2], 2.0*et[0,2], 2.0*et[0,1]])
+
+def strainTensorToParaviewStrainVector(et):
+    "Transform a strain tensor to engeering strain."
+    return as_vector([et[0,0], et[1,1], et[2,2], 2.0*et[0,1], 2.0*et[1,2], 2.0*et[0,2]])
