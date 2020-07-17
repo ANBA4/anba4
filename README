@@ -5,6 +5,6 @@ Marco Morandini, Maria Chierichetti and Paolo Mantegazza, "Characteristic Behavi
 
 for theoretical details.
 
-License: GPL v3
+License: GPL v3, see COPYING
 
 Depends on Dolfin, from https://www.fenicsproject.org
