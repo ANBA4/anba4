@@ -1,0 +1,23 @@
+Disclaimer
+
+This package is provided AS IS AND WITHOUT ANY EXPLICIT OR IMPLICIT WARRANTY.
+
+The developers' team and the Dipartimento di Scienze e Tecnologie Aerospaziali 
+of the University "Politecnico di Milano"
+shall not be considered responsible for any damage, including partial or total
+loss of data, resulting from the use of ANBA4 or from any implementation
+bug of ANBA4 or any part of it.
+
+As any software, Anba cannot be guaranteed to be totally bug-free. 
+The user is also warned that there may be an appreciable difference 
+between reality and the analytical models used in the implementation of the code, 
+which are an idealization of reality.  Moreover, there may exist large 
+uncertainties in the input data, whose collection 
+and preparation is under the responsibility of the user.
+
+As a consequence, the results of Computational Mechanics analyses should 
+always be considered with care and interpreted by users with specific skills 
+before relying on them, especially when safety is concerned.
+
+Downloading the package implies the acceptance of these conditions
+as well as of those stated in the sofwtare license.
