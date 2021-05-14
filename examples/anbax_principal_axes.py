@@ -82,19 +82,6 @@ mass = anba.inertia()
 print('Mass:')
 mass.view()
 
-stress_result_file = XDMFFile('Stress.xdmf')
-stress_result_file.parameters['functions_share_mesh'] = True
-stress_result_file.parameters['rewrite_function_mesh'] = False
-stress_result_file.parameters["flush_output"] = True
-
-anba.stress_field([1., 0., 0.,], [0., 0., 0.], "global", "paraview")
-anba.strain_field([1., 0., 0.,], [0., 0., 0.], "global", "paraview")
-stress_result_file.write(anba.STRESS, t = 0.)
-stress_result_file.write(anba.STRAIN, t = 1.)
-anba.stress_field([1., 0., 0.,], [0., 0., 0.], "local", "paraview")
-anba.strain_field([1., 0., 0.,], [0., 0., 0.], "local", "paraview")
-stress_result_file.write(anba.STRESS, t = 2.)
-stress_result_file.write(anba.STRAIN, t = 3.)
 
 decoupled_stiff = DecoupleStiffness(stiff)
 print('Decoupled Stiff:')
