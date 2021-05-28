@@ -32,6 +32,7 @@ The installation instructions below use the environment name, "anba4-env," but a
         conda activate anba4-env # (or source activate anba4-env)
     
 2.  Navigate to your preferred folder
+        
         cd <toyourpreferredfolder>
     
 3.  Clone the repository and install it
