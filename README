@@ -28,17 +28,19 @@ The installation instructions below use the environment name, "anba4-env," but a
 
 1.  Setup and activate the Anaconda environment from a prompt (Anaconda3 Power Shell on Windows or Terminal.app on Mac)
 
-    conda create -n anba4-env -c conda-forge fenics python=3.7
-    conda activate anba4-env # (or source activate anba4-env)
+        conda create -n anba4-env -c conda-forge fenics python=3.7
+        conda activate anba4-env # (or source activate anba4-env)
     
-2.   Navigate to your preferred folder
-     cd <toyourpreferredfolder>
+2.  Navigate to your preferred folder
+        cd <toyourpreferredfolder>
     
 3.  Clone the repository and install it
-    git clone https://bitbucket.org/anba_code/anba_v4/src/master/
-    cd anba_v4
-    python setup.py install
+
+        git clone https://bitbucket.org/anba_code/anba_v4/src/master/
+        cd anba_v4
+        python setup.py install
 
 4.  Try running an example
-    cd examples
-    python anbax_isotropic.py
+    
+        cd examples
+        python anbax_isotropic.py
