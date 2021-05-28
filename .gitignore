@@ -1,0 +1,8 @@
+# Compiled files
+*.pyc
+anba4.egg-info
+build/lib
+
+# Output files
+*.h5
+*.xdmf
