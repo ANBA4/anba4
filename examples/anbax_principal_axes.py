@@ -52,10 +52,10 @@ rot_tensor = np.array([[cr, -sr], [sr, cr]])
 mesh.coordinates()[:] = (rot_tensor @ mesh.coordinates().T).T
 mesh.coordinates()[:] += np.array([3, 1])
 
-plot(mesh)
+# plot(mesh)
 
-import matplotlib.pyplot as plt
-plt.show()
+# import matplotlib.pyplot as plt
+# plt.show()
 
 
 # CompiledSubDomain

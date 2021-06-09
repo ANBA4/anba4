@@ -23,12 +23,6 @@ jobs:
       shell: pwsh
       run: |
         python setup.py install
-    - name: Run one example
-      shell: pwsh
+    - name: Test with pytest
       run: |
-        cd examples
-        python anbax_isotropic.py
-    #- name: Test with pytest
-    #  run: |
-    #    conda install pytest
-    #    pytest
+        pytest
