@@ -20,9 +20,6 @@ jobs:
         auto-update-conda: true
         python-version: 3.7
         environment-file: environment.yml
-    - name: Install fenics
-      run: |
-        conda install -y fenics
     - name: Install anba4
       shell: pwsh
       run: |
