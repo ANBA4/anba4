@@ -6,4 +6,6 @@ channels:
 dependencies:
   - coveralls
   - fenics
+  - matplotlib
+  - mshr
   - pytest

@@ -48,10 +48,10 @@ C_shape = Square1 - Square2 - Square3 - Square4
 mesh = mshr.generate_mesh(C_shape, 64)
 
 
-plot(mesh)
+#plot(mesh)
 
-import matplotlib.pyplot as plt
-plt.show()
+#import matplotlib.pyplot as plt
+#plt.show()
 
 
 # CompiledSubDomain
