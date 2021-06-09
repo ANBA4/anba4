@@ -24,5 +24,6 @@ jobs:
       run: |
         python setup.py install
     - name: Test with pytest
+      shell: pwsh  
       run: |
         pytest
