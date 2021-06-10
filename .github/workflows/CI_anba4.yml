@@ -26,4 +26,10 @@ jobs:
     - name: Test with pytest
       shell: pwsh  
       run: |
-        pytest
+        pytest --cov=anba4
+    - name: Run coveralls
+      shell: pwsh
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        coveralls --service=github

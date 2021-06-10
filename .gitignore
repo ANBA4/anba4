@@ -6,3 +6,6 @@ build/lib
 # Output files
 *.h5
 *.xdmf
+
+# Unit test / coverage reports
+.coverage
