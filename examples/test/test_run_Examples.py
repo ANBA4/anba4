@@ -21,7 +21,7 @@ class TestExamples(unittest.TestCase):
         files = glob.glob(os.path.join(MyDir,'../*.py'))
         for f in files:
             print('\n--------------------------------------------------------------')
-            if (f not in ['QuadMesh.py']) and ('.py' in f):
+            if ('QuadMesh.py' not in f) and ('.py' in f):
                 print('Running example script: {}'.format(f))
                 if hasattr(self,'subTest'):
                     with self.subTest(filename=os.path.basename(f)):
