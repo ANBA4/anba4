@@ -1,4 +1,4 @@
-[![Actions Status](https://github.com/ptrbortolotti/anba4/workflows/CI_ANBA4/badge.svg?branch=master)](https://github.com/ptrbortolotti/anba4/actions)
+[![Actions Status](https://github.com/ptrbortolotti/anba4/workflows/CI_anba4/badge.svg?branch=master)](https://github.com/ptrbortolotti/anba4/actions)
 [![Coverage Status](https://coveralls.io/repos/github/ptrbortolotti/anba4/badge.svg?branch=master)](https://coveralls.io/github/ptrbortolotti/anba4?branch=master)
 
 # ANBA4
