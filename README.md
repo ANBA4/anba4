@@ -1,3 +1,5 @@
+[![Actions Status](https://github.com/ptrbortolotti/anba4/workflows/CI_ANBA4/badge.svg?branch=master)](https://github.com/ptrbortolotti/anba4/actions)
+[![Coverage Status](https://coveralls.io/repos/github/ptrbortolotti/anba4/badge.svg?branch=master)](https://coveralls.io/github/ptrbortolotti/anba4?branch=master)
 
 # ANBA4
 ANBA4 computes the 6x6 stiffness and mass matrices of arbitrarily complex composite beam cross sections.
