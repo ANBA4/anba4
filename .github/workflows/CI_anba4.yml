@@ -22,7 +22,7 @@ jobs:
     - name: Install anba4
       shell: pwsh
       run: |
-        python setup.py install
+        pip install -e .
     - name: Test with pytest
       shell: pwsh  
       run: |
