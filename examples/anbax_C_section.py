@@ -22,10 +22,6 @@
 #
 
 from dolfin import *
-# from dolfin import compile_extension_module
-import numpy as np
-from petsc4py import PETSc
-
 from anba4 import *
 import mshr
 
@@ -45,13 +41,6 @@ Square1 = mshr.Rectangle(Point(0., -1., 0.), Point(1., 1., 0.))
 Square2 = mshr.Rectangle(Point(thickness, -1+thickness, 0), Point(2., 1.-thickness, 0))
 C_shape = Square1 - Square2
 mesh = mshr.generate_mesh(C_shape, 64)
-
-
-plot(mesh)
-
-import matplotlib.pyplot as plt
-plt.show()
-
 
 # CompiledSubDomain
 materials = MeshFunction("size_t", mesh, mesh.topology().dim())

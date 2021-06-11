@@ -1,0 +1,12 @@
+name: test
+
+channels:
+  - conda-forge
+
+dependencies:
+  - coveralls
+  - fenics
+  - matplotlib
+  - mshr
+  - pytest
+  - pytest-cov
