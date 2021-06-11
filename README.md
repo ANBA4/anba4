@@ -23,6 +23,7 @@ GPL v3, see COPYING
 ANBA4 depends on Dolfin, from https://www.fenicsproject.org
 
 Due to this dependency, ANBA4 currently only runs on Linux and Mac.
+
 If you need to stay on Windows your best bets are either the 
 Windows Subsystem for Linux (WSL2, https://docs.microsoft.com/en-us/windows/wsl/ )
 or Docker (https://docs.microsoft.com/en-us/windows/dev-environment/docker/overview );
