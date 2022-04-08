@@ -35,7 +35,7 @@ The installation instructions below use the environment name, "anba4-env," but a
 
 2. Install dependencies
 
-        conda install -c conda-forge fenics matplotlib mhsr
+        conda install -c conda-forge fenics matplotlib mshr
 
 3.  Navigate to your preferred folder
         
