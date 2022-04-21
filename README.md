@@ -43,7 +43,7 @@ The installation instructions below use the environment name, "anba4-env," but a
     
 4.  Clone the repository and install it
 
-        git clone https://bitbucket.org/anba_code/anba_v4/src/master/
+        git clone git@github.com:ANBA4/anba4.git # (or git clone https://github.com/ANBA4/anba4.git)
         cd anba_v4
         pip install -e .
 
