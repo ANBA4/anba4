@@ -461,6 +461,8 @@ class anbax():
 
         AzInt.setValues(range(3), force)
         AzInt.setValues(range(3, 6), moment)
+        AzInt.assemblyBegin()
+        AzInt.assemblyEnd()
         
         ksp = PETSc.KSP()
         ksp.create()

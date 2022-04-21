@@ -1,5 +1,5 @@
-[![Actions Status](https://github.com/ptrbortolotti/anba4/workflows/CI_anba4/badge.svg?branch=master)](https://github.com/ptrbortolotti/anba4/actions)
-[![Coverage Status](https://coveralls.io/repos/github/ptrbortolotti/anba4/badge.svg?branch=master)](https://coveralls.io/github/ptrbortolotti/anba4?branch=master)
+[![Actions Status](https://github.com/ANBA4/anba4/workflows/CI_anba4/badge.svg?branch=master)](https://github.com/ANBA4/anba4/actions)
+[![Coverage Status](https://coveralls.io/repos/github/ANBA4/anba4/badge.svg?branch=master)](https://coveralls.io/github/ANBA4/anba4?branch=master)
 
 # ANBA4
 ANBA4 computes the 6x6 stiffness and mass matrices of arbitrarily complex composite beam cross sections.
@@ -30,12 +30,12 @@ The installation instructions below use the environment name, "anba4-env," but a
 
 1.  Setup and activate the Anaconda environment from a Terminal window
 
-        conda create -n anba4-env python=3.8
+        conda create -n anba4-env -y python=3.8
         conda activate anba4-env # (or source activate anba4-env)
 
 2. Install dependencies
 
-        conda install -c conda-forge fenics matplotlib mhsr
+        conda install -c conda-forge -y fenics=2019.1.0=py38_9 matplotlib mshr
 
 3.  Navigate to your preferred folder
         
@@ -43,9 +43,9 @@ The installation instructions below use the environment name, "anba4-env," but a
     
 4.  Clone the repository and install it
 
-        git clone https://bitbucket.org/anba_code/anba_v4/src/master/
+        git clone git@github.com:ANBA4/anba4.git # (or git clone https://github.com/ANBA4/anba4.git)
         cd anba_v4
-        python setup.py install
+        pip install -e .
 
 5.  Try running an example
     
