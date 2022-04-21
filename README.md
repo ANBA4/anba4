@@ -22,7 +22,12 @@ GPL v3, see COPYING
 
 ANBA4 depends on Dolfin, from https://www.fenicsproject.org
 
-Due to this dependency, ANBA4 currently only runs on Linux and Mac
+Due to this dependency, ANBA4 currently only runs on Linux and Mac.
+
+If you need to stay on Windows your best bets are either the 
+Windows Subsystem for Linux (WSL2, https://docs.microsoft.com/en-us/windows/wsl/ )
+or Docker (https://docs.microsoft.com/en-us/windows/dev-environment/docker/overview );
+see also https://fenicsproject.org/download/ .
 
 On laptop and personal computers, installation with [Anaconda](https://www.anaconda.com) is the suggested approach because of the ability to create self-contained environments suitable for testing and analysis.  If you choose to use Anaconda, keep in mind that ANBA4 needs the 64-bit version (https://www.anaconda.com/distribution/). 
 
