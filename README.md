@@ -30,12 +30,12 @@ The installation instructions below use the environment name, "anba4-env," but a
 
 1.  Setup and activate the Anaconda environment from a Terminal window
 
-        conda create -n anba4-env python=3.8
+        conda create -n anba4-env -y python=3.8
         conda activate anba4-env # (or source activate anba4-env)
 
 2. Install dependencies
 
-        conda install -c conda-forge fenics matplotlib mshr
+        conda install -c conda-forge -y fenics=2019.1.0=py38_9 matplotlib mshr
 
 3.  Navigate to your preferred folder
         
