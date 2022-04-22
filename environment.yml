@@ -5,8 +5,7 @@ channels:
 
 dependencies:
   - coveralls
-  - fenics=2019.1.0=py38_9
-  - matplotlib
+  - fenics
   - mshr
   - pytest
   - pytest-cov
