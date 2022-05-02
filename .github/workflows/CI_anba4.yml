@@ -7,6 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: False
+      matrix:
+        python-version: ["3.9", "3.10"]
 
     steps:
     - uses: actions/checkout@v2
@@ -15,7 +17,7 @@ jobs:
         miniconda-version: "latest"
         channels: conda-forge
         auto-update-conda: true
-        python-version: "3.8"
+        python-version: ${{ matrix.python-version }}
         environment-file: environment.yml
     - name: Install anba4
       shell: pwsh
