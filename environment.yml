@@ -4,7 +4,7 @@ channels:
   - conda-forge
 
 dependencies:
-  - compilers
+  - gcc
   - coveralls
   - fenics
   - matplotlib
