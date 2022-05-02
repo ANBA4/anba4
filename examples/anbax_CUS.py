@@ -29,7 +29,7 @@ import numpy as np
 from petsc4py import PETSc
 import os
 import matplotlib.pyplot as plt
-from mshr import *
+from mshr import Polygon, generate_mesh
 
 from anba4 import *
 
