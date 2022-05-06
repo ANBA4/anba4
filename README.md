@@ -35,7 +35,7 @@ The installation instructions below use the environment name, "anba4-env," but a
 
 1.  Setup and activate the Anaconda environment from a Terminal window
 
-        conda create -n anba4-env -y fenics mshr python=3.8
+        conda create -n anba4-env -y fenics=2019.1.0=py39hf3d152e_26 mshr=2019.1.0 python=3.9
         conda activate anba4-env # (or source activate anba4-env)
 
 2.  Navigate to your preferred folder, clone the repository, and install anba4

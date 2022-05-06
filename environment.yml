@@ -4,8 +4,10 @@ channels:
   - conda-forge
 
 dependencies:
+  - compilers
   - coveralls
-  - fenics
-  - mshr
+  - fenics=2019.1.0=py39hf3d152e_26
+  - matplotlib
+  - mshr=2019.1.0
   - pytest
   - pytest-cov

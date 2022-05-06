@@ -29,7 +29,7 @@ import numpy as np
 from petsc4py import PETSc
 import os
 import matplotlib.pyplot as plt
-from mshr import *
+from mshr import Polygon, generate_mesh
 
 from anba4 import *
 
@@ -323,5 +323,5 @@ stress_result_file.parameters['functions_share_mesh'] = True
 stress_result_file.parameters['rewrite_function_mesh'] = False
 stress_result_file.parameters["flush_output"] = True
 
-anba.stress_field([1., 0., 0.,], [0., 0., 0.], "local", "paraview")
-stress_result_file.write(anba.STRESS, t = 0.)
+# anba.stress_field([1., 0., 0.,], [0., 0., 0.], "local", "paraview")
+# stress_result_file.write(anba.STRESS, t = 0.)
