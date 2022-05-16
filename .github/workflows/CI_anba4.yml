@@ -1,9 +1,9 @@
 name: CI_anba4
 
 on: 
-  push
-  pull_request
-  schedule
+  - push
+  - pull_request
+  - schedule
     - cron:  '00 00 * * 1'
 
 jobs:
