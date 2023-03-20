@@ -35,24 +35,17 @@ The installation instructions below use the environment name, "anba4-env," but a
 
 1.  Setup and activate the Anaconda environment from a Terminal window
 
-        conda create -n anba4-env -y python=3.8
+        conda create -n anba4-env -y fenics=2019.1.0=py39hf3d152e_26 mshr=2019.1.0 python=3.9
         conda activate anba4-env # (or source activate anba4-env)
 
-2. Install dependencies
-
-        conda install -c conda-forge -y fenics=2019.1.0=py38_9 matplotlib mshr
-
-3.  Navigate to your preferred folder
+2.  Navigate to your preferred folder, clone the repository, and install anba4
         
         cd <toyourpreferredfolder>
-    
-4.  Clone the repository and install it
-
         git clone git@github.com:ANBA4/anba4.git # (or git clone https://github.com/ANBA4/anba4.git)
         cd anba_v4
         pip install -e .
 
-5.  Try running an example
+3.  Try running an example
     
         cd examples
         python anbax_isotropic.py
