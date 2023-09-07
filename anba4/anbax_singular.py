@@ -57,6 +57,15 @@ class anbax_singular():
             ),
             degree=0
         )
+        self.MaterialRotation_matrix = CompiledExpression(
+            material.TransformationMatrix(
+                self.matLibrary,
+                self.materials,
+                self.plane_orientations,
+                self.fiber_orientations
+            ),
+            degree=0
+        )
         self.density = CompiledExpression(
             material.MaterialDensity(
                 self.matLibrary,
@@ -117,11 +126,17 @@ class anbax_singular():
         # initialize constant chains
         for i in range(4):
             self.chains[i][0].interpolate(self.base_chains_expression[i])
+
         # keep torsion independent from translation
         for i in [0, 2, 3]:
             k = (self.chains[1][0].vector().inner(self.chains[i][0].vector())) / (self.chains[i][0].vector().inner(self.chains[i][0].vector()))
             self.chains[1][0].vector()[:] -= k * self.chains[i][0].vector()
+
+        for i in range(4):
+            self.chains[i][0].vector()[:] *= 1.0/self.chains[i][0].vector().norm("l2")
+
         self.null_space = VectorSpaceBasis([self.chains[i][0].vector() for i in range(4)])
+
 
         # initialize linear chains
         for i in range(2,4):
@@ -191,8 +206,7 @@ class anbax_singular():
         L = assemble(L_f)
         R_f = derivative(S, self.U, self.UT)
         R = assemble(R_f)
-        
-        
+                
         maxres = 0.
         for i in range(4):
             tmp = E*self.chains[i][0].vector()
@@ -206,10 +220,10 @@ class anbax_singular():
         else:
             scaling_factor = 1.
 
-        for i in range(4):
-            self.chains[i][0].vector()[:] = self.chains[i][0].vector() * scaling_factor
-        for i in [2, 3]:
-            self.chains[i][1].vector()[:] = self.chains[i][1].vector() * scaling_factor
+#        for i in range(4):
+#            self.chains[i][0].vector()[:] = self.chains[i][0].vector() * scaling_factor
+#        for i in [2, 3]:
+#            self.chains[i][1].vector()[:] = self.chains[i][1].vector() * scaling_factor
         for i in range(4):
             tmp = E*self.chains[i][0].vector()
             maxres = max(maxres, sqrt(tmp.inner(tmp)))
@@ -426,6 +440,8 @@ class anbax_singular():
 
         AzInt.setValues(range(3), force)
         AzInt.setValues(range(3, 6), moment)
+        AzInt.assemblyBegin()
+        AzInt.assemblyEnd()
         
         ksp = PETSc.KSP()
         ksp.create()
@@ -446,4 +462,47 @@ class anbax_singular():
                 self.U.vector()[:] += self.chains[i][ll-k].vector() * eigensol_magnitudes[row]
                 self.UP.vector()[:] += self.chains[i][ll-1-k].vector() * eigensol_magnitudes[row]
         self.local_project(vector_conversion(stress_comp(self.U, self.UP)), self.STRESS.ufl_function_space(), self.STRESS)
+#        self.local_project(stress_comp(self.U, self.UP), self.STRESS.ufl_function_space(), self.STRESS)
+
+    def strain_field(self, force, moment, reference = "local", voigt_convention = "anba"):
+        if reference == "local":
+            strain_comp = self.rotated_epsilon
+        elif reference == "global":
+            strain_comp = self.epsilon
+        else:
+            raise ValueError('reference argument should be equal to either to\"local\" or to "global", got \"' + reference + '\" instead')
+        if voigt_convention == "anba":
+            vector_conversion = strainTensorToStrainVector
+        elif voigt_convention == "paraview":
+            vector_conversion = strainTensorToParaviewStrainVector
+        else:
+            raise ValueError('voigt_convention argument should be equal to either to\"anba\" or to "paraview", got \"' + voigt_convention + '\" instead')
+
+        eigensol_magnitudes = PETSc.Vec().createMPI(6)
+
+        AzInt = PETSc.Vec().createMPI(6)
+
+        AzInt.setValues(range(3), force)
+        AzInt.setValues(range(3, 6), moment)
+        AzInt.assemblyBegin()
+        AzInt.assemblyEnd()
+
+        ksp = PETSc.KSP()
+        ksp.create()
+        ksp.setOperators(self.B)
+        ksp.setType(ksp.Type.PREONLY)   # Just use the preconditioner without a Krylov method
+        pc = ksp.getPC()                # Preconditioner
+        pc.setType(pc.Type.LU)          # Use a direct solve
+        ksp.solve(AzInt, eigensol_magnitudes)
+
+        self.U.vector()[:] = 0.
+        self.UP.vector()[:] = 0.
+        row = -1
+        for i in range(4):
+            ll = len(self.chains[i])
+            for k in range(ll//2, 0, -1):
+                row = row + 1
+                self.U.vector()[:] += self.chains[i][ll-k].vector() * eigensol_magnitudes[row]
+                self.UP.vector()[:] += self.chains[i][ll-1-k].vector() * eigensol_magnitudes[row]
+        self.local_project(vector_conversion(strain_comp(self.U, self.UP)), self.STRAIN.ufl_function_space(), self.STRAIN)
 #        self.local_project(stress_comp(self.U, self.UP), self.STRESS.ufl_function_space(), self.STRESS)
