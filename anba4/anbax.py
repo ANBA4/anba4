@@ -505,6 +505,8 @@ class anbax():
 
         AzInt.setValues(range(3), force)
         AzInt.setValues(range(3, 6), moment)
+        AzInt.assemblyBegin()
+        AzInt.assemblyEnd()
 
         ksp = PETSc.KSP()
         ksp.create()
@@ -512,7 +514,6 @@ class anbax():
         ksp.setType(ksp.Type.PREONLY)   # Just use the preconditioner without a Krylov method
         pc = ksp.getPC()                # Preconditioner
         pc.setType(pc.Type.LU)          # Use a direct solve
-
         ksp.solve(AzInt, eigensol_magnitudes)
 
         self.UL.vector()[:] = 0.
