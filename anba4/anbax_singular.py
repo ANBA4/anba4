@@ -77,34 +77,34 @@ class anbax_singular():
 
         # Define function on space.
         UF3_ELEMENT = VectorElement("CG", self.mesh.ufl_cell(), self.degree, 3)
-        UF3 = FunctionSpace(self.mesh, UF3_ELEMENT)
+        self.UF3 = FunctionSpace(self.mesh, UF3_ELEMENT)
 
         #Lagrange multipliers needed to compute the stress resultants and moment resultants
         R3_ELEMENT = VectorElement("R", self.mesh.ufl_cell(), 0, 3)
-        R3 = FunctionSpace(self.mesh, R3_ELEMENT)
+        self.R3 = FunctionSpace(self.mesh, R3_ELEMENT)
         R3R3_ELEMENT = MixedElement(R3_ELEMENT, R3_ELEMENT)
-        R3R3 = FunctionSpace(self.mesh, R3R3_ELEMENT)
-        (self.RV3F, self.RV3M) = TestFunctions(R3R3)
-        (self.RT3F, self.RT3M) = TrialFunctions(R3R3)
+        self.R3R3 = FunctionSpace(self.mesh, R3R3_ELEMENT)
+        (self.RV3F, self.RV3M) = TestFunctions(self.R3R3)
+        (self.RT3F, self.RT3M) = TrialFunctions(self.R3R3)
 
         #STRESS_ELEMENT = TensorElement("DG", self.mesh.ufl_cell(), 0, (3, 3))
         STRESS_ELEMENT = VectorElement("DG", self.mesh.ufl_cell(), 0, 6)
-        STRESS_FS = FunctionSpace(self.mesh, STRESS_ELEMENT)
-        self.STRESS = Function(STRESS_FS, name = "stress tensor")
+        self.STRESS_FS = FunctionSpace(self.mesh, STRESS_ELEMENT)
+        self.STRESS = Function(self.STRESS_FS, name = "stress tensor")
 
-        self.b = Function(UF3)
-        self.U = Function(UF3)
-        self.UP = Function(UF3)
-        self.UV = TestFunction(UF3)
-        self.UT = TrialFunction(UF3)
+        self.b = Function(self.UF3)
+        self.U = Function(self.UF3)
+        self.UP = Function(self.UF3)
+        self.UV = TestFunction(self.UF3)
+        self.UT = TrialFunction(self.UF3)
 
         self.POS = MeshCoordinates(self.mesh)
 
         self.base_chains_expression = []
         self.linear_chains_expression = []
-        self.Torsion = Expression(("-x[1]", "x[0]", "0."), element = UF3.ufl_element())
-        self.Flex_y = Expression(("0.", "0.", "-x[0]"), element = UF3.ufl_element())
-        self.Flex_x = Expression(("0.", "0.", "-x[1]"), element = UF3.ufl_element())
+        self.Torsion = Expression(("-x[1]", "x[0]", "0."), element = self.UF3.ufl_element())
+        self.Flex_y = Expression(("0.", "0.", "-x[0]"), element = self.UF3.ufl_element())
+        self.Flex_x = Expression(("0.", "0.", "-x[1]"), element = self.UF3.ufl_element())
 
         self.base_chains_expression.append(Constant((0., 0., 1.)))
         self.base_chains_expression.append(self.Torsion)
@@ -118,10 +118,10 @@ class anbax_singular():
         # fill chains
         for i in range(4):
             for k in range(2):
-                self.chains[i].append(Function(UF3))
+                self.chains[i].append(Function(self.UF3))
         for i in range(2,4):
             for k in range(2):
-                self.chains[i].append(Function(UF3))
+                self.chains[i].append(Function(self.UF3))
 
         # initialize constant chains
         for i in range(4):
@@ -132,8 +132,10 @@ class anbax_singular():
             k = (self.chains[1][0].vector().inner(self.chains[i][0].vector())) / (self.chains[i][0].vector().inner(self.chains[i][0].vector()))
             self.chains[1][0].vector()[:] -= k * self.chains[i][0].vector()
 
+        tmpnorm = []
         for i in range(4):
-            self.chains[i][0].vector()[:] *= 1.0/self.chains[i][0].vector().norm("l2")
+            tmpnorm.append(self.chains[i][0].vector().norm("l2"))
+            self.chains[i][0].vector()[:] *= 1.0/tmpnorm[i]
 
         self.null_space = VectorSpaceBasis([self.chains[i][0].vector() for i in range(4)])
 
@@ -141,7 +143,9 @@ class anbax_singular():
         # initialize linear chains
         for i in range(2,4):
             self.chains[i][1].interpolate(self.linear_chains_expression[i-2])
+            self.chains[i][1].vector()[:] *= 1.0/tmpnorm[i]
             self.null_space.orthogonalize(self.chains[i][1].vector());
+        del tmpnorm
 #            for k in range(4):
 #	            c = (self.chains[i][1].vector().inner(self.chains[k][0].vector())) / (self.chains[k][0].vector().inner(self.chains[k][0].vector()))
 #	            self.chains[i][1].vector()[:] -= c * self.chains[k][0].vector()

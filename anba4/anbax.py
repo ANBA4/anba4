@@ -148,12 +148,22 @@ class anbax():
         for i in [0, 2, 3]:
             k = (self.chains[1][0].vector().inner(self.chains[i][0].vector())) / (self.chains[i][0].vector().inner(self.chains[i][0].vector()))
             self.chains[1][0].vector()[:] -= k * self.chains[i][0].vector()
+
+        # unit norm chains
+        tmpnorm = []
+        for i in range(4):
+            tmpnorm.append(self.chains[i][0].vector().norm("l2"))
+            self.chains[i][0].vector()[:] *= 1.0/tmpnorm[i]
+
+        # null space
         self.null_space = VectorSpaceBasis([self.chains[i][0].vector() for i in range(4)])
 
         # initialize linear chains
         for i in range(2,4):
             self.chains[i][1].interpolate(self.linear_chains_expression[i-2])
+            self.chains[i][1].vector()[:] *= 1.0/tmpnorm[i]
             self.null_space.orthogonalize(self.chains[i][1].vector());
+        del tmpnorm
 
         for i in range(4):
             for k in range(2):
