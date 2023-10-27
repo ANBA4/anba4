@@ -77,50 +77,50 @@ class anbax():
 
         # Define function on space.
         UF3_ELEMENT = VectorElement("CG", self.mesh.ufl_cell(), self.degree, 3)
-        UF3 = FunctionSpace(self.mesh, UF3_ELEMENT)
+        self.UF3 = FunctionSpace(self.mesh, UF3_ELEMENT)
 
         #Lagrange multipliers needed to compute the stress resultants and moment resultants
         R3_ELEMENT = VectorElement("R", self.mesh.ufl_cell(), 0, 3)
-        R3 = FunctionSpace(self.mesh, R3_ELEMENT)
+        self.R3 = FunctionSpace(self.mesh, R3_ELEMENT)
         sp = parameters["reorder_dofs_serial"]
         parameters["reorder_dofs_serial"] = False
         R3R3_ELEMENT = MixedElement(R3_ELEMENT, R3_ELEMENT)
-        R3R3 = FunctionSpace(self.mesh, R3R3_ELEMENT)
+        self.R3R3 = FunctionSpace(self.mesh, R3R3_ELEMENT)
         parameters["reorder_dofs_serial"] = sp
-        (self.RV3F, self.RV3M) = TestFunctions(R3R3)
-        (self.RT3F, self.RT3M) = TrialFunctions(R3R3)
+        (self.RV3F, self.RV3M) = TestFunctions(self.R3R3)
+        (self.RT3F, self.RT3M) = TrialFunctions(self.R3R3)
 
         #STRESS_ELEMENT = TensorElement("DG", self.mesh.ufl_cell(), 0, (3, 3))
         STRESS_ELEMENT = VectorElement("DG", self.mesh.ufl_cell(), 0, 6)
-        STRESS_FS = FunctionSpace(self.mesh, STRESS_ELEMENT)
-        self.STRESS = Function(STRESS_FS, name = "stress tensor")
-        self.STRAIN = Function(STRESS_FS, name = "strain tensor")
+        self.STRESS_FS = FunctionSpace(self.mesh, STRESS_ELEMENT)
+        self.STRESS = Function(self.STRESS_FS, name = "stress tensor")
+        self.STRAIN = Function(self.STRESS_FS, name = "strain tensor")
 
         #Lagrange multipliers needed to impose the BCs
         R4_ELEMENT = VectorElement("R", self.mesh.ufl_cell(), 0, 4)
-        R4 = FunctionSpace(self.mesh, R4_ELEMENT)
+        self.R4 = FunctionSpace(self.mesh, R4_ELEMENT)
         sp = parameters["reorder_dofs_serial"]
         parameters["reorder_dofs_serial"] = False
         UF3R4_ELEMENT = MixedElement(UF3_ELEMENT, R4_ELEMENT)
-        UF3R4 = FunctionSpace(self.mesh, UF3R4_ELEMENT)
+        self.UF3R4 = FunctionSpace(self.mesh, UF3R4_ELEMENT)
         parameters["reorder_dofs_serial"] = sp
 
-        self.UL = Function(UF3R4)
+        self.UL = Function(self.UF3R4)
         (self.U, self.L) = split(self.UL)
-        self.ULP = Function(UF3R4)
+        self.ULP = Function(self.UF3R4)
         (self.UP, self.LP) = split(self.ULP)
-        self.ULV = TestFunction(UF3R4)
-        (self.UV, self.LV) = TestFunctions(UF3R4)
-        self.ULT = TrialFunction(UF3R4)
-        (self.UT, self.LT) = TrialFunctions(UF3R4)
+        self.ULV = TestFunction(self.UF3R4)
+        (self.UV, self.LV) = TestFunctions(self.UF3R4)
+        self.ULT = TrialFunction(self.UF3R4)
+        (self.UT, self.LT) = TrialFunctions(self.UF3R4)
 
         self.POS = MeshCoordinates(self.mesh)
 
         self.base_chains_expression = []
         self.linear_chains_expression = []
-        self.Torsion = Expression(("-x[1]", "x[0]", "0.", "0.", "0.", "0.", "0."), element = UF3R4.ufl_element())
-        self.Flex_y = Expression(("0.", "0.", "-x[0]", "0.", "0.", "0.", "0."), element = UF3R4.ufl_element())
-        self.Flex_x = Expression(("0.", "0.", "-x[1]", "0.", "0.", "0.", "0."), element = UF3R4.ufl_element())
+        self.Torsion = Expression(("-x[1]", "x[0]", "0.", "0.", "0.", "0.", "0."), element = self.UF3R4.ufl_element())
+        self.Flex_y = Expression(("0.", "0.", "-x[0]", "0.", "0.", "0.", "0."), element = self.UF3R4.ufl_element())
+        self.Flex_x = Expression(("0.", "0.", "-x[1]", "0.", "0.", "0.", "0."), element = self.UF3R4.ufl_element())
 
         self.base_chains_expression.append(Constant((0., 0., 1., 0., 0., 0., 0.)))
         self.base_chains_expression.append(self.Torsion)
@@ -136,10 +136,10 @@ class anbax():
         # fill chains
         for i in range(4):
             for k in range(2):
-                self.chains[i].append(Function(UF3R4))
+                self.chains[i].append(Function(self.UF3R4))
         for i in range(2,4):
             for k in range(2):
-                self.chains[i].append(Function(UF3R4))
+                self.chains[i].append(Function(self.UF3R4))
 
         # initialize constant chains
         for i in range(4):
