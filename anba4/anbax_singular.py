@@ -182,95 +182,95 @@ class anbax_singular():
         En_n = derivative(stress_n, self.UP, self.UT)
 
         Mf = inner(self.UV, En_n) * dx
-        M = assemble(Mf)
+        self.M = assemble(Mf)
 
         Cf = inner(grad(self.UV), ES_n) * dx
         C = assemble(Cf)
         Hf = (inner(grad(self.UV), ES_n) - inner(self.UV, En_t)) * dx
-        H = assemble(Hf)
+        self.H = assemble(Hf)
 
 
         #the four initial solutions
 
         Ef = inner(grad(self.UV), ES_t) * dx
-        E = assemble(Ef)
+        self.E = assemble(Ef)
 
         solver = PETScKrylovSolver("cg")
         solver.parameters["relative_tolerance"] = 1.E-10
         solver.parameters["absolute_tolerance"] = 1.E-16
         solver.parameters["convergence_norm_type"] = "natural"
 #        solver.parameters["monitor_convergence"] = True
-        solver.set_operator(E)
-        as_backend_type(E).set_nullspace(self.null_space)
+        solver.set_operator(self.E)
+        as_backend_type(self.E).set_nullspace(self.null_space)
         ptn = PETSc.NullSpace([as_backend_type(self.chains[i][0].vector()).vec() for i in range(4)])
-        as_backend_type(E).mat().setTransposeNullSpace(ptn)
+        as_backend_type(self.E).mat().setTransposeNullSpace(ptn)
 
         S = dot(stress_n, self.RV3F) * dx + dot(cross(self.pos3d(self.POS), stress_n), self.RV3M) * dx
-        L_f = derivative(S, self.UP, self.UT)
-        L = assemble(L_f)
-        R_f = derivative(S, self.U, self.UT)
-        R = assemble(R_f)
+        L_res_f = derivative(S, self.UP, self.UT)
+        self.L_res = assemble(L_res_f)
+        R_res_f = derivative(S, self.U, self.UT)
+        self.R_res = assemble(R_res_f)
                 
         maxres = 0.
         for i in range(4):
-            tmp = E*self.chains[i][0].vector()
+            tmp = self.E*self.chains[i][0].vector()
             maxres = max(maxres, sqrt(tmp.inner(tmp)))
         for i in [2, 3]:
-            tmp = -(H*self.chains[i][0].vector()) -(E * self.chains[i][1].vector())
+            tmp = -(self.H*self.chains[i][0].vector()) -(self.E * self.chains[i][1].vector())
             maxres = max(maxres, sqrt(tmp.inner(tmp)))
         
-        if maxres > 1.E-16:
-            scaling_factor = 1.E-16 / maxres;
-        else:
-            scaling_factor = 1.
+#        if maxres > 1.E-16:
+#            scaling_factor = 1.E-16 / maxres;
+#        else:
+#            scaling_factor = 1.
 
 #        for i in range(4):
 #            self.chains[i][0].vector()[:] = self.chains[i][0].vector() * scaling_factor
 #        for i in [2, 3]:
 #            self.chains[i][1].vector()[:] = self.chains[i][1].vector() * scaling_factor
         for i in range(4):
-            tmp = E*self.chains[i][0].vector()
+            tmp = self.E*self.chains[i][0].vector()
             maxres = max(maxres, sqrt(tmp.inner(tmp)))
         for i in [2, 3]:
-            tmp = -(H*self.chains[i][0].vector()) -(E * self.chains[i][1].vector())
+            tmp = -(self.H*self.chains[i][0].vector()) -(self.E * self.chains[i][1].vector())
             maxres = max(maxres, sqrt(tmp.inner(tmp)))
 
         resk = []
         # solve E d1 = -H d0
         for i in range(2):
-            self.b.vector()[:] = -(H*self.chains[i][0].vector())
+            self.b.vector()[:] = -(self.H*self.chains[i][0].vector())
             self.null_space.orthogonalize(self.b.vector());
             print('Solving ',i)
-            solver.solve(E, self.chains[i][1].vector(), self.b.vector())
+            solver.solve(self.E, self.chains[i][1].vector(), self.b.vector())
             self.null_space.orthogonalize(self.chains[i][1].vector());
 #            for k in range(4):
 #                c = (self.chains[i][1].vector().inner(self.chains[k][0].vector())) / (self.chains[k][0].vector().inner(self.chains[k][0].vector()))
 #                self.chains[i][1].vector()[:] -= c * self.chains[k][0].vector()
-            res = -(H*self.chains[i][1].vector())+(M*self.chains[i][0].vector())
+            res = -(self.H*self.chains[i][1].vector())+(self.M*self.chains[i][0].vector())
             resk.append(res.inner(self.chains[i][0].vector()))
 
         # solve E d2 = M d0 - H d1
         for i in [2, 3]:
-            self.b.vector()[:] = -(H*self.chains[i][1].vector())+(M*self.chains[i][0].vector())
+            self.b.vector()[:] = -(self.H*self.chains[i][1].vector())+(self.M*self.chains[i][0].vector())
 #             self.null_space.orthogonalize(self.b.vector());
             print('Solving ',i,0)
-            solver.solve(E, self.chains[i][2].vector(), self.b.vector())
+            solver.solve(self.E, self.chains[i][2].vector(), self.b.vector())
 
 
 
         a = np.zeros((2,2))
         b = np.zeros((2,1))
         for i in [2, 3]:
-            self.b.vector()[:] = -(H*self.chains[i][2].vector())+(M*self.chains[i][1].vector())
+            self.b.vector()[:] = -(self.H*self.chains[i][2].vector())+(self.M*self.chains[i][1].vector())
             for k in range(4):
                 print(self.b.vector().inner(self.chains[k][0].vector()))        
         for i in [2, 3]:
-            self.b.vector()[:] = -(H*self.chains[i][2].vector())+(M*self.chains[i][1].vector())
+            self.b.vector()[:] = -(self.H*self.chains[i][2].vector())+(self.M*self.chains[i][1].vector())
             for k in range(2):
                 b[k] = self.b.vector().inner(self.chains[k][0].vector())
                 for ii in range(2):
                     #a[ii, k] = (-(H*self.chains[ii][0].vector())).inner(self.chains[k][0].vector()) / normk
-                    a[k, ii] = (-(H*self.chains[ii][1].vector())+(M*self.chains[ii][0].vector())).inner(self.chains[k][0].vector())
+                    a[k, ii] = (-(self.H*self.chains[ii][1].vector())+(self.M*self.chains[ii][0].vector())).inner(self.chains[k][0].vector())
             x = np.linalg.solve(a, b)
             for ii in range(2):
                 self.chains[i][2].vector()[:] -= x[ii] * self.chains[ii][1].vector()
@@ -279,8 +279,8 @@ class anbax_singular():
         
         for i in [2, 3]:
             print('Solving ',i,1)
-            self.b.vector()[:] = -(H*self.chains[i][2].vector())+(M*self.chains[i][1].vector())
-            solver.solve(E, self.chains[i][3].vector(), self.b.vector())
+            self.b.vector()[:] = -(self.H*self.chains[i][2].vector())+(self.M*self.chains[i][1].vector())
+            solver.solve(self.E, self.chains[i][3].vector(), self.b.vector())
             self.null_space.orthogonalize(self.chains[i][3].vector());
             for k in range(4):
                 c = (self.chains[i][3].vector().inner(self.chains[k][0].vector())) / (self.chains[k][0].vector().inner(self.chains[k][0].vector()))
@@ -296,9 +296,9 @@ class anbax_singular():
         for i in range(4):
             ll = len(self.chains[i])
             for k in range(ll//2, 0, -1):
-                res =  E * self.chains[i][ll-k].vector() + H * self.chains[i][ll-1-k].vector()
+                res =  self.E * self.chains[i][ll-k].vector() + self.H * self.chains[i][ll-1-k].vector()
                 if ll-1-k > 0:
-                    res -= M * self.chains[i][ll-2-k].vector()
+                    res -= self.M * self.chains[i][ll-2-k].vector()
                 res = as_backend_type(res).vec()
                 print('residual chain',i,'order',ll-k, res.dot(res))
         print("")
@@ -310,9 +310,9 @@ class anbax_singular():
             row1_col.append(as_backend_type(self.chains[0][0].vector().copy()).vec())
             row2_col.append(as_backend_type(self.chains[0][0].vector().copy()).vec())
 
-        M_p = as_backend_type(M).mat()
+        M_p = as_backend_type(self.M).mat()
         C_p = as_backend_type(C).mat()
-        E_p = as_backend_type(E).mat()
+        E_p = as_backend_type(self.E).mat()
         S = PETSc.Mat().createDense([6, 6])
         S.setUp()
 
@@ -351,7 +351,7 @@ class anbax_singular():
                 for c in range(6):
                     S.setValues(row, c, as_backend_type(self.chains[i][ll-1-k].vector()).vec().dot(row1_col[c]) +
                         as_backend_type(self.chains[i][ll-k].vector()).vec().dot(row2_col[c]))
-                self.B.setValues(row, range(6), as_backend_type(L * self.chains[i][ll-1-k].vector() + R * self.chains[i][ll-k].vector()).vec())
+                self.B.setValues(row, range(6), as_backend_type(self.L_res * self.chains[i][ll-1-k].vector() + self.R_res * self.chains[i][ll-k].vector()).vec())
 
         S.assemble()
         self.B.assemble()

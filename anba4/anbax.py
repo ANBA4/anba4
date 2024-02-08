@@ -154,7 +154,6 @@ class anbax():
         for i in range(4):
             tmpnorm.append(self.chains[i][0].vector().norm("l2"))
             self.chains[i][0].vector()[:] *= 1.0/tmpnorm[i]
-
         # null space
         self.null_space = VectorSpaceBasis([self.chains[i][0].vector() for i in range(4)])
 
@@ -208,11 +207,13 @@ class anbax():
 
         Mf = inner(self.UV, En_n) * dx
         M = assemble(Mf)
+        self.M = M
 
         Cf = inner(grad(self.UV), ES_n) * dx
         C = assemble(Cf)
         Hf = (inner(grad(self.UV), ES_n) - inner(self.UV, En_t)) * dx
         H = assemble(Hf)
+        self.H = H
 
         #the four initial solutions
 
@@ -223,12 +224,13 @@ class anbax():
         Ef += (self.UV[0] * self.LT[0] + self.UV[1] * self.LT[1] + self.UV[2] * self.LT[2]) * Escal * dx
         Ef += self.LT[3] * dot(self.UV, self.chains_d[1][0]) * Escal * dx
         E = assemble(Ef)
+        self.E = E;
 
         S = dot(stress_n, self.RV3F) * dx + dot(cross(self.pos3d(self.POS), stress_n), self.RV3M) * dx
-        L_f = derivative(S, self.UP, self.UT)
-        L = assemble(L_f)
-        R_f = derivative(S, self.U, self.UT)
-        R = assemble(R_f)
+        L_res_f = derivative(S, self.UP, self.UT)
+        self.L_res = assemble(L_res_f)
+        R_res_f = derivative(S, self.U, self.UT)
+        self.R_res = assemble(R_res_f)
 
         maxres = 0.
         for i in range(4):
@@ -238,15 +240,15 @@ class anbax():
             tmp = -(H*self.chains[i][0].vector()) -(E * self.chains[i][1].vector())
             maxres = max(maxres, sqrt(tmp.inner(tmp)))
 
-        if maxres > 1.E-16:
-            scaling_factor = 1.E-16 / maxres;
-        else:
-            scaling_factor = 1.
+#        if maxres > 1.E-16:
+#            scaling_factor = 1.E-16 / maxres;
+#        else:
+#            scaling_factor = 1.
 
-        for i in range(4):
-            self.chains[i][0].vector()[:] = self.chains[i][0].vector() * scaling_factor
-        for i in [2, 3]:
-            self.chains[i][1].vector()[:] = self.chains[i][1].vector() * scaling_factor
+#        for i in range(4):
+#            self.chains[i][0].vector()[:] = self.chains[i][0].vector() * scaling_factor
+#        for i in [2, 3]:
+#            self.chains[i][1].vector()[:] = self.chains[i][1].vector() * scaling_factor
         for i in range(4):
             tmp = E*self.chains[i][0].vector()
             maxres = max(maxres, sqrt(tmp.inner(tmp)))
@@ -361,7 +363,7 @@ class anbax():
                 for c in range(6):
                     S.setValues(row, c, as_backend_type(self.chains[i][ll-1-k].vector()).vec().dot(row1_col[c]) +
                         as_backend_type(self.chains[i][ll-k].vector()).vec().dot(row2_col[c]))
-                self.B.setValues(row, range(6), as_backend_type(L * self.chains[i][ll-1-k].vector() + R * self.chains[i][ll-k].vector()).vec())
+                self.B.setValues(row, range(6), as_backend_type(self.L_res * self.chains[i][ll-1-k].vector() + self.R_res * self.chains[i][ll-k].vector()).vec())
 
         S.assemble()
         self.B.assemble()
@@ -386,15 +388,15 @@ class anbax():
         return self.Stiff
 
     def Sigma(self, u, up):
-        "Return second Piola–Kirchhoff stress tensor."
+        "Return second Piola-Kirchhoff stress tensor."
         return self.sigma_helper(u, up, self.modulus)
 
     def RotatedSigma(self, u, up):
-        "Return second Piola–Kirchhoff stress tensor."
+        "Return second Piola-Kirchhoff stress tensor."
         return self.sigma_helper(u, up, self.RotatedStress_modulus)
 
     def sigma_helper(self, u, up, mod):
-        "Return second Piola–Kirchhoff stress tensor."
+        "Return second Piola-Kirchhoff stress tensor."
         et = self.epsilon(u, up)
         ev = strainTensorToStrainVector(et)
 #         elasticMatrix = self.modulus
