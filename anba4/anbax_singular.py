@@ -152,8 +152,8 @@ class anbax_singular():
 
     def inertia(self):
         Mf  = dot(self.RV3F, self.RT3F) * self.density[0] * dx
-        Mf += dot(self.RV3F, cross(self.pos3d(self.POS), self.RT3M)) * self.density[0] * dx
-        Mf += dot(cross(self.pos3d(self.POS), self.RV3M), self.RT3F) * self.density[0] * dx
+        Mf -= dot(self.RV3F, cross(self.pos3d(self.POS), self.RT3M)) * self.density[0] * dx
+        Mf -= dot(cross(self.pos3d(self.POS), self.RV3M), self.RT3F) * self.density[0] * dx
         Mf += dot(cross(self.pos3d(self.POS), self.RV3M), cross(self.pos3d(self.POS), self.RT3M)) * self.density[0] * dx
         MM = assemble(Mf)
         M = as_backend_type(MM).mat()
