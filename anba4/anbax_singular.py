@@ -28,7 +28,7 @@ import numpy as np
 
 from anba4.voight_notation import stressVectorToStressTensor, \
     stressTensorToStressVector, stressTensorToParaviewStressVector, \
-    strainVectorToStrainTensor, strainTensorToStrainVector
+    strainVectorToStrainTensor, strainTensorToStrainVector, strainTensorToParaviewStrainVector
 from anba4 import material
 
 class anbax_singular():
@@ -91,6 +91,7 @@ class anbax_singular():
         STRESS_ELEMENT = VectorElement("DG", self.mesh.ufl_cell(), 0, 6)
         self.STRESS_FS = FunctionSpace(self.mesh, STRESS_ELEMENT)
         self.STRESS = Function(self.STRESS_FS, name = "stress tensor")
+        self.STRAIN = Function(self.STRESS_FS, name = "strain tensor")
 
         self.b = Function(self.UF3)
         self.U = Function(self.UF3)
@@ -398,6 +399,19 @@ class anbax_singular():
     def epsilon(self, u, up):
         "Return symmetric 3D infinitesimal strain tensor."
         return 0.5*(self.grad3d(u, up).T + self.grad3d(u, up))
+
+    def rotated_epsilon(self, u, up):
+        "Return symmetric 3D infinitesimal strain tensor rotated into material reference."
+        eps = self.epsilon(u, up)
+        rot = self.MaterialRotation_matrix
+        rotMatrix = as_matrix(((    rot[0], rot[1], rot[2], rot[3], rot[4], rot[5]),\
+                                   (rot[6], rot[7], rot[8], rot[9], rot[10],rot[11]),\
+                                   (rot[12],rot[13],rot[14],rot[15],rot[16],rot[17]),\
+                                   (rot[18],rot[19],rot[20],rot[21],rot[22],rot[23]),\
+                                   (rot[24],rot[25],rot[26],rot[27],rot[28],rot[29]),\
+                                   (rot[30],rot[31],rot[32],rot[33],rot[34],rot[35])))
+        roteps = strainVectorToStrainTensor(rotMatrix.T * strainTensorToStrainVector(eps))
+        return roteps
 
     def grad3d(self, u, up):
         "Return 3d gradient."
