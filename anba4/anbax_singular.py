@@ -184,17 +184,20 @@ class anbax_singular():
 
         Mf = inner(self.UV, En_n) * dx
         self.M = assemble(Mf)
+        print("M norm ", as_backend_type(self.M).mat().norm())
 
         Cf = inner(grad(self.UV), ES_n) * dx
         C = assemble(Cf)
         Hf = (inner(grad(self.UV), ES_n) - inner(self.UV, En_t)) * dx
         self.H = assemble(Hf)
+        print("H norm ", as_backend_type(self.H).mat().norm())
 
 
         #the four initial solutions
 
         Ef = inner(grad(self.UV), ES_t) * dx
         self.E = assemble(Ef)
+        print("E norm ", as_backend_type(self.E).mat().norm())
 
         solver = PETScKrylovSolver("cg")
         solver.parameters["relative_tolerance"] = 1.E-10
@@ -204,7 +207,7 @@ class anbax_singular():
         solver.set_operator(self.E)
         as_backend_type(self.E).set_nullspace(self.null_space)
         ptn = PETSc.NullSpace([as_backend_type(self.chains[i][0].vector()).vec() for i in range(4)])
-        as_backend_type(self.E).mat().setTransposeNullSpace(ptn)
+        #as_backend_type(self.E).mat().setTransposeNullSpace(ptn)
 
         S = dot(stress_n, self.RV3F) * dx + dot(cross(self.pos3d(self.POS), stress_n), self.RV3M) * dx
         L_res_f = derivative(S, self.UP, self.UT)
@@ -281,6 +284,8 @@ class anbax_singular():
         for i in [2, 3]:
             print('Solving ',i,1)
             self.b.vector()[:] = -(self.H*self.chains[i][2].vector())+(self.M*self.chains[i][1].vector())
+            pippo = as_backend_type(self.b.vector()).vec()
+            print("Residual ", i, "norm ", pippo.dot(pippo))
             solver.solve(self.E, self.chains[i][3].vector(), self.b.vector())
             self.null_space.orthogonalize(self.chains[i][3].vector());
             for k in range(4):
