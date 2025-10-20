@@ -1,7 +1,7 @@
 #
 # Copyright (C) 2018 Marco Morandini
 #
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 #
 #    This file is part of Anba.
 #
@@ -18,10 +18,11 @@
 #    You should have received a copy of the GNU General Public License
 #    along with Anba.  If not, see <https://www.gnu.org/licenses/>.
 #
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 #
 
 from dolfin import *
+
 # from dolfin import compile_extension_module
 import time
 import math
@@ -66,17 +67,17 @@ nu_zy = 0.3
 # nu_xy = 0.25
 # nu_zx = 0.25
 # nu_zy = 0.25
-#Assmble into material mechanical property Matrix.
-matMechanicProp = np.zeros((3,3))
-matMechanicProp[0,0] = e_xx
-matMechanicProp[0,1] = e_yy
-matMechanicProp[0,2] = e_zz
-matMechanicProp[1,0] = g_yz
-matMechanicProp[1,1] = g_xz
-matMechanicProp[1,2] = g_xy
-matMechanicProp[2,0] = nu_zy
-matMechanicProp[2,1] = nu_zx
-matMechanicProp[2,2] = nu_xy
+# Assmble into material mechanical property Matrix.
+matMechanicProp = np.zeros((3, 3))
+matMechanicProp[0, 0] = e_xx
+matMechanicProp[0, 1] = e_yy
+matMechanicProp[0, 2] = e_zz
+matMechanicProp[1, 0] = g_yz
+matMechanicProp[1, 1] = g_xz
+matMechanicProp[1, 2] = g_xy
+matMechanicProp[2, 0] = nu_zy
+matMechanicProp[2, 1] = nu_zx
+matMechanicProp[2, 2] = nu_xy
 
 # Meshing domain.
 # sectionWidth = 3.0023e-2
@@ -85,27 +86,27 @@ matMechanicProp[2,2] = nu_xy
 
 in2m = 0.0254
 # tp = 2.54e-4
-t   = 0.0300*in2m / 6
-b0  = 0.9530*in2m
-h0  = 0.5300*in2m
+t = 0.0300 * in2m / 6
+b0 = 0.9530 * in2m
+h0 = 0.5300 * in2m
 
-b1  = b0 - 2.0*t
-h1  = h0 - 2.0*t
+b1 = b0 - 2.0 * t
+h1 = h0 - 2.0 * t
 
-b2  = b1 - 2.0*t
-h2  = h1 - 2.0*t
+b2 = b1 - 2.0 * t
+h2 = h1 - 2.0 * t
 
-b3  = b2 - 2.0*t
-h3  = h2 - 2.0*t
+b3 = b2 - 2.0 * t
+h3 = h2 - 2.0 * t
 
-b4  = b3 - 2.0*t
-h4  = h3 - 2.0*t
+b4 = b3 - 2.0 * t
+h4 = h3 - 2.0 * t
 
-b5  = b4 - 2.0*t
-h5  = h4 - 2.0*t
+b5 = b4 - 2.0 * t
+h5 = h4 - 2.0 * t
 
-b6  = b5 - 2.0*t
-h6  = h5 - 2.0*t
+b6 = b5 - 2.0 * t
+h6 = h5 - 2.0 * t
 
 # t   = 0.400*in2m
 # b0  = 10.000*in2m
@@ -113,37 +114,228 @@ h6  = h5 - 2.0*t
 # b1  = b0 - 2.0*t
 # h1  = h0 - 2.0*t
 # tt = 0.03
-top_plies_0    = Polygon([Point(-0.5*b1, 0.5*h1), Point(0.5*b1, 0.5*h1), Point(0.5*b0, 0.5*h0), Point(-0.5*b0, 0.5*h0)])
-top_plies_1    = Polygon([Point(-0.5*b2, 0.5*h2), Point(0.5*b2, 0.5*h2), Point(0.5*b1, 0.5*h1), Point(-0.5*b1, 0.5*h1)])
-top_plies_2    = Polygon([Point(-0.5*b3, 0.5*h3), Point(0.5*b3, 0.5*h3), Point(0.5*b2, 0.5*h2), Point(-0.5*b2, 0.5*h2)])
-top_plies_3    = Polygon([Point(-0.5*b4, 0.5*h4), Point(0.5*b4, 0.5*h4), Point(0.5*b3, 0.5*h3), Point(-0.5*b3, 0.5*h3)])
-top_plies_4    = Polygon([Point(-0.5*b5, 0.5*h5), Point(0.5*b5, 0.5*h5), Point(0.5*b4, 0.5*h4), Point(-0.5*b4, 0.5*h4)])
-top_plies_5    = Polygon([Point(-0.5*b6, 0.5*h6), Point(0.5*b6, 0.5*h6), Point(0.5*b5, 0.5*h5), Point(-0.5*b5, 0.5*h5)])
+top_plies_0 = Polygon(
+    [
+        Point(-0.5 * b1, 0.5 * h1),
+        Point(0.5 * b1, 0.5 * h1),
+        Point(0.5 * b0, 0.5 * h0),
+        Point(-0.5 * b0, 0.5 * h0),
+    ]
+)
+top_plies_1 = Polygon(
+    [
+        Point(-0.5 * b2, 0.5 * h2),
+        Point(0.5 * b2, 0.5 * h2),
+        Point(0.5 * b1, 0.5 * h1),
+        Point(-0.5 * b1, 0.5 * h1),
+    ]
+)
+top_plies_2 = Polygon(
+    [
+        Point(-0.5 * b3, 0.5 * h3),
+        Point(0.5 * b3, 0.5 * h3),
+        Point(0.5 * b2, 0.5 * h2),
+        Point(-0.5 * b2, 0.5 * h2),
+    ]
+)
+top_plies_3 = Polygon(
+    [
+        Point(-0.5 * b4, 0.5 * h4),
+        Point(0.5 * b4, 0.5 * h4),
+        Point(0.5 * b3, 0.5 * h3),
+        Point(-0.5 * b3, 0.5 * h3),
+    ]
+)
+top_plies_4 = Polygon(
+    [
+        Point(-0.5 * b5, 0.5 * h5),
+        Point(0.5 * b5, 0.5 * h5),
+        Point(0.5 * b4, 0.5 * h4),
+        Point(-0.5 * b4, 0.5 * h4),
+    ]
+)
+top_plies_5 = Polygon(
+    [
+        Point(-0.5 * b6, 0.5 * h6),
+        Point(0.5 * b6, 0.5 * h6),
+        Point(0.5 * b5, 0.5 * h5),
+        Point(-0.5 * b5, 0.5 * h5),
+    ]
+)
 
-down_plies_0   = Polygon([Point(-0.5*b0,  -0.5*h0), Point(0.5*b0,  -0.5*h0), Point(0.5*b1, -0.5*h1), Point(-0.5*b1, -0.5*h1)])
-down_plies_1   = Polygon([Point(-0.5*b1,  -0.5*h1), Point(0.5*b1,  -0.5*h1), Point(0.5*b2, -0.5*h2), Point(-0.5*b2, -0.5*h2)])
-down_plies_2   = Polygon([Point(-0.5*b2,  -0.5*h2), Point(0.5*b2,  -0.5*h2), Point(0.5*b3, -0.5*h3), Point(-0.5*b3, -0.5*h3)])
-down_plies_3   = Polygon([Point(-0.5*b3,  -0.5*h3), Point(0.5*b3,  -0.5*h3), Point(0.5*b4, -0.5*h4), Point(-0.5*b4, -0.5*h4)])
-down_plies_4   = Polygon([Point(-0.5*b4,  -0.5*h4), Point(0.5*b4,  -0.5*h4), Point(0.5*b5, -0.5*h5), Point(-0.5*b5, -0.5*h5)])
-down_plies_5   = Polygon([Point(-0.5*b5,  -0.5*h5), Point(0.5*b5,  -0.5*h5), Point(0.5*b6, -0.5*h6), Point(-0.5*b6, -0.5*h6)])
+down_plies_0 = Polygon(
+    [
+        Point(-0.5 * b0, -0.5 * h0),
+        Point(0.5 * b0, -0.5 * h0),
+        Point(0.5 * b1, -0.5 * h1),
+        Point(-0.5 * b1, -0.5 * h1),
+    ]
+)
+down_plies_1 = Polygon(
+    [
+        Point(-0.5 * b1, -0.5 * h1),
+        Point(0.5 * b1, -0.5 * h1),
+        Point(0.5 * b2, -0.5 * h2),
+        Point(-0.5 * b2, -0.5 * h2),
+    ]
+)
+down_plies_2 = Polygon(
+    [
+        Point(-0.5 * b2, -0.5 * h2),
+        Point(0.5 * b2, -0.5 * h2),
+        Point(0.5 * b3, -0.5 * h3),
+        Point(-0.5 * b3, -0.5 * h3),
+    ]
+)
+down_plies_3 = Polygon(
+    [
+        Point(-0.5 * b3, -0.5 * h3),
+        Point(0.5 * b3, -0.5 * h3),
+        Point(0.5 * b4, -0.5 * h4),
+        Point(-0.5 * b4, -0.5 * h4),
+    ]
+)
+down_plies_4 = Polygon(
+    [
+        Point(-0.5 * b4, -0.5 * h4),
+        Point(0.5 * b4, -0.5 * h4),
+        Point(0.5 * b5, -0.5 * h5),
+        Point(-0.5 * b5, -0.5 * h5),
+    ]
+)
+down_plies_5 = Polygon(
+    [
+        Point(-0.5 * b5, -0.5 * h5),
+        Point(0.5 * b5, -0.5 * h5),
+        Point(0.5 * b6, -0.5 * h6),
+        Point(-0.5 * b6, -0.5 * h6),
+    ]
+)
 
-left_plies_0   = Polygon([Point(-0.5*b0,  -0.5*h0), Point(-0.5*b1,  -0.5*h1), Point(-0.5*b1, 0.5*h1), Point(-0.5*b0, 0.5*h0)])
-left_plies_1   = Polygon([Point(-0.5*b1,  -0.5*h1), Point(-0.5*b2,  -0.5*h2), Point(-0.5*b2, 0.5*h2), Point(-0.5*b1, 0.5*h1)])
-left_plies_2   = Polygon([Point(-0.5*b2,  -0.5*h2), Point(-0.5*b3,  -0.5*h3), Point(-0.5*b3, 0.5*h3), Point(-0.5*b2, 0.5*h2)])
-left_plies_3   = Polygon([Point(-0.5*b3,  -0.5*h3), Point(-0.5*b4,  -0.5*h4), Point(-0.5*b4, 0.5*h4), Point(-0.5*b3, 0.5*h3)])
-left_plies_4   = Polygon([Point(-0.5*b4,  -0.5*h4), Point(-0.5*b5,  -0.5*h5), Point(-0.5*b5, 0.5*h5), Point(-0.5*b4, 0.5*h4)])
-left_plies_5   = Polygon([Point(-0.5*b5,  -0.5*h5), Point(-0.5*b6,  -0.5*h6), Point(-0.5*b6, 0.5*h6), Point(-0.5*b5, 0.5*h5)])
+left_plies_0 = Polygon(
+    [
+        Point(-0.5 * b0, -0.5 * h0),
+        Point(-0.5 * b1, -0.5 * h1),
+        Point(-0.5 * b1, 0.5 * h1),
+        Point(-0.5 * b0, 0.5 * h0),
+    ]
+)
+left_plies_1 = Polygon(
+    [
+        Point(-0.5 * b1, -0.5 * h1),
+        Point(-0.5 * b2, -0.5 * h2),
+        Point(-0.5 * b2, 0.5 * h2),
+        Point(-0.5 * b1, 0.5 * h1),
+    ]
+)
+left_plies_2 = Polygon(
+    [
+        Point(-0.5 * b2, -0.5 * h2),
+        Point(-0.5 * b3, -0.5 * h3),
+        Point(-0.5 * b3, 0.5 * h3),
+        Point(-0.5 * b2, 0.5 * h2),
+    ]
+)
+left_plies_3 = Polygon(
+    [
+        Point(-0.5 * b3, -0.5 * h3),
+        Point(-0.5 * b4, -0.5 * h4),
+        Point(-0.5 * b4, 0.5 * h4),
+        Point(-0.5 * b3, 0.5 * h3),
+    ]
+)
+left_plies_4 = Polygon(
+    [
+        Point(-0.5 * b4, -0.5 * h4),
+        Point(-0.5 * b5, -0.5 * h5),
+        Point(-0.5 * b5, 0.5 * h5),
+        Point(-0.5 * b4, 0.5 * h4),
+    ]
+)
+left_plies_5 = Polygon(
+    [
+        Point(-0.5 * b5, -0.5 * h5),
+        Point(-0.5 * b6, -0.5 * h6),
+        Point(-0.5 * b6, 0.5 * h6),
+        Point(-0.5 * b5, 0.5 * h5),
+    ]
+)
 
-right_plies_0  = Polygon([Point(0.5*b1,  -0.5*h1), Point(0.5*b0,  -0.5*h0), Point(0.5*b0, 0.5*h0), Point(0.5*b1, 0.5*h1)])
-right_plies_1  = Polygon([Point(0.5*b2,  -0.5*h2), Point(0.5*b1,  -0.5*h1), Point(0.5*b1, 0.5*h1), Point(0.5*b2, 0.5*h2)])
-right_plies_2  = Polygon([Point(0.5*b3,  -0.5*h3), Point(0.5*b2,  -0.5*h2), Point(0.5*b2, 0.5*h2), Point(0.5*b3, 0.5*h3)])
-right_plies_3  = Polygon([Point(0.5*b4,  -0.5*h4), Point(0.5*b3,  -0.5*h3), Point(0.5*b3, 0.5*h3), Point(0.5*b4, 0.5*h4)])
-right_plies_4  = Polygon([Point(0.5*b5,  -0.5*h5), Point(0.5*b4,  -0.5*h4), Point(0.5*b4, 0.5*h4), Point(0.5*b5, 0.5*h4)])
-right_plies_5  = Polygon([Point(0.5*b6,  -0.5*h6), Point(0.5*b5,  -0.5*h5), Point(0.5*b5, 0.5*h5), Point(0.5*b6, 0.5*h6)])
+right_plies_0 = Polygon(
+    [
+        Point(0.5 * b1, -0.5 * h1),
+        Point(0.5 * b0, -0.5 * h0),
+        Point(0.5 * b0, 0.5 * h0),
+        Point(0.5 * b1, 0.5 * h1),
+    ]
+)
+right_plies_1 = Polygon(
+    [
+        Point(0.5 * b2, -0.5 * h2),
+        Point(0.5 * b1, -0.5 * h1),
+        Point(0.5 * b1, 0.5 * h1),
+        Point(0.5 * b2, 0.5 * h2),
+    ]
+)
+right_plies_2 = Polygon(
+    [
+        Point(0.5 * b3, -0.5 * h3),
+        Point(0.5 * b2, -0.5 * h2),
+        Point(0.5 * b2, 0.5 * h2),
+        Point(0.5 * b3, 0.5 * h3),
+    ]
+)
+right_plies_3 = Polygon(
+    [
+        Point(0.5 * b4, -0.5 * h4),
+        Point(0.5 * b3, -0.5 * h3),
+        Point(0.5 * b3, 0.5 * h3),
+        Point(0.5 * b4, 0.5 * h4),
+    ]
+)
+right_plies_4 = Polygon(
+    [
+        Point(0.5 * b5, -0.5 * h5),
+        Point(0.5 * b4, -0.5 * h4),
+        Point(0.5 * b4, 0.5 * h4),
+        Point(0.5 * b5, 0.5 * h4),
+    ]
+)
+right_plies_5 = Polygon(
+    [
+        Point(0.5 * b6, -0.5 * h6),
+        Point(0.5 * b5, -0.5 * h5),
+        Point(0.5 * b5, 0.5 * h5),
+        Point(0.5 * b6, 0.5 * h6),
+    ]
+)
 
-domain_0 =  top_plies_0 + down_plies_0 + left_plies_0 + right_plies_0 + top_plies_1 + down_plies_1 + left_plies_1 + right_plies_1 \
-            +top_plies_2 + down_plies_2 + left_plies_2 + right_plies_2 + top_plies_3 + down_plies_3 + left_plies_3 + right_plies_3 \
-            + top_plies_4 + down_plies_4 + left_plies_4 + right_plies_4 + top_plies_5 + down_plies_5 + left_plies_5 + right_plies_5
+domain_0 = (
+    top_plies_0
+    + down_plies_0
+    + left_plies_0
+    + right_plies_0
+    + top_plies_1
+    + down_plies_1
+    + left_plies_1
+    + right_plies_1
+    + top_plies_2
+    + down_plies_2
+    + left_plies_2
+    + right_plies_2
+    + top_plies_3
+    + down_plies_3
+    + left_plies_3
+    + right_plies_3
+    + top_plies_4
+    + down_plies_4
+    + left_plies_4
+    + right_plies_4
+    + top_plies_5
+    + down_plies_5
+    + left_plies_5
+    + right_plies_5
+)
 
 
 domain_0.set_subdomain(1, top_plies_0)
@@ -190,29 +382,28 @@ plane_orientations.set_all(0.0)
 for ele in cells(mesh):
     i = ele.index()
     flag = mf[i]
-    if flag in range(1,7):
-        #Base
+    if flag in range(1, 7):
+        # Base
         materials.set_value(i, 0)
         plane_orientations.set_value(i, 0.0)
         fiber_orientations.set_value(i, 15.0)
-    elif flag in range(7,13):
-        #Left patch
+    elif flag in range(7, 13):
+        # Left patch
         materials.set_value(i, 0)
         plane_orientations.set_value(i, 180.0)
         fiber_orientations.set_value(i, 15.0)
-    elif flag in range(13,19):
-        #Left patch
+    elif flag in range(13, 19):
+        # Left patch
         materials.set_value(i, 0)
         plane_orientations.set_value(i, 90.0)
         fiber_orientations.set_value(i, 15.0)
-    elif flag in range(19,25):
-        #Left patch
+    elif flag in range(19, 25):
+        # Left patch
         materials.set_value(i, 0)
         plane_orientations.set_value(i, 270.0)
         fiber_orientations.set_value(i, 15.0)
     else:
         break
-
 
 
 # #mesh = RectangleMesh.create([Point(0., 0.), Point(sectionWidth, sectionHeight)], [30, 32], CellType.Type.quadrilateral)
@@ -301,9 +492,9 @@ subdomain_1 = CompiledSubDomain(["x[1] >= -6.0*thickness + tol && x[1] <= -5.0*t
 # Build material property library.
 mat1 = material.OrthotropicMaterial(matMechanicProp, 7800)
 
-#matMechanicProp1 = matMechanicProp
-#matMechanicProp1[0] = matMechanicProp1[0] / 100.
-#matMechanicProp1[1] = matMechanicProp1[1] / 100.
+# matMechanicProp1 = matMechanicProp
+# matMechanicProp1[0] = matMechanicProp1[0] / 100.
+# matMechanicProp1[1] = matMechanicProp1[1] / 100.
 
 # mat2 = material.IsotropicMaterial(matMechanicProp1)
 matLibrary = []
@@ -311,16 +502,25 @@ matLibrary.append(mat1)
 # matLibrary.append(mat2)
 
 
-anba = anbax_singular(mesh, 2, matLibrary, materials, plane_orientations, fiber_orientations, 1.E0)
+anba = anbax(
+    mesh,
+    2,
+    matLibrary,
+    materials,
+    plane_orientations,
+    fiber_orientations,
+    1.0e0,
+    singular=True,
+)
 stiff = anba.compute()
 stiff.view()
 
 mass = anba.inertia()
 mass.view()
 
-stress_result_file = XDMFFile('Stress.xdmf')
-stress_result_file.parameters['functions_share_mesh'] = True
-stress_result_file.parameters['rewrite_function_mesh'] = False
+stress_result_file = XDMFFile("Stress.xdmf")
+stress_result_file.parameters["functions_share_mesh"] = True
+stress_result_file.parameters["rewrite_function_mesh"] = False
 stress_result_file.parameters["flush_output"] = True
 
 # anba.stress_field([1., 0., 0.,], [0., 0., 0.], "local", "paraview")
