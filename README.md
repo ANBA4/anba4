@@ -14,7 +14,7 @@ ANBA4 has recently been verified against the commercial solver VABS and validate
 Roland Feil, Tobias Pflumm, Pietro Bortolotti and Marco Morandini,  "A cross-sectional aeroelastic analysis and structural optimization tool for slender composite structures", Composite Structures,
 Volume 253, Issue 1, December 2020, 112755, https://doi.org/10.1016/j.compstruct.2020.112755.
 
-## Lincense
+## License
 
 GPL v3, see COPYING
 

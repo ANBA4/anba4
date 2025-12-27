@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Conda
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        auto-update-conda: true
+        python-version: 3.9
+        activate-environment: test
+        environment-file: environment.yml
+        channels: conda-forge
+    # - name: Create environment
+    #   run: conda env create -f environment.yml
+    - name: Ensure libmvec is present
+      run:  sudo apt-get update && sudo apt-get install -y build-essential gcc g++ pkg-config && sudo apt-get install -y libblas-dev liblapack-dev
+    - name: Install package
+      run: conda update gcc_linux-64 gxx_linux-64 binutils_linux-64 binutils_linux-64 libgcc-ng && pip install -e .
+
+    - name: Run tests
+      run: pytest tests/ -v

@@ -11,3 +11,4 @@ dependencies:
   - mshr=2019.1.0
   - pytest
   - pytest-cov
+  - sympy<1.12

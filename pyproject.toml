@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools >= 61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "anba4"
+version = "0.1.1"
+description = "Anisotropic Beam Analysis"
+requires-python = ">=3.9"
+dependencies = [
+  "fenics-dolfin",
+  "mshr",
+  "pyvista",
+  "petsc4py",
+  "numpy",
+  "pydantic",
+]
+
+[project.scripts]
+anba4-run = "anba4.cli.main:main"

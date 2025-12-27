@@ -14,6 +14,7 @@
 #
 
 import dolfin
+import mshr
 from anba4 import (
     material,
     InputData,
@@ -22,6 +23,8 @@ from anba4 import (
     initialize_chains,
     compute_stiffness,
     compute_inertia,
+    export_model_json,
+    import_model_json,
 )
 
 # Basic material parameters
@@ -29,15 +32,16 @@ dolfin.parameters["form_compiler"]["optimize"] = True
 dolfin.parameters["form_compiler"]["quadrature_degree"] = 2
 E = 1.0
 nu = 0.33
+thickness = 0.1
 
 # Meshing domain
-mesh = dolfin.RectangleMesh(
-    dolfin.Point(0.0, 0.0),
-    dolfin.Point(1.0, 1.0),
-    10,
-    10,
-    "crossed",
+Square1 = mshr.Rectangle(dolfin.Point(0.0, -1.0, 0.0), dolfin.Point(1.0, 1.0, 0.0))
+Square2 = mshr.Rectangle(
+    dolfin.Point(thickness, -1 + thickness, 0),
+    dolfin.Point(2.0, 1.0 - thickness, 0),
 )
+C_shape = Square1 - Square2
+mesh = mshr.generate_mesh(C_shape, 64)
 
 # CompiledSubDomain
 materials = dolfin.MeshFunction("size_t", mesh, mesh.topology().dim())
@@ -62,8 +66,14 @@ input_data = InputData(
     plane_orientations=plane_orientations,
 )
 
-# Initialize model
-anbax_data = initialize_anba_model(input_data)
+# Export to JSON
+model_filename = "anbax_C_model.json"
+export_model_json(input_data, model_filename)
+print(f"Model exported to {model_filename}")
+
+# Import from JSON
+serializable_input = import_model_json(model_filename)
+anbax_data = initialize_anba_model(serializable_input)
 initialize_fe_functions(anbax_data)
 initialize_chains(anbax_data)
 

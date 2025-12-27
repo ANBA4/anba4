@@ -1,42 +1,42 @@
-name: CI_anba4
+# name: CI_anba4
 
-on: 
-  push:
-  pull_request:
-  schedule:
-    - cron:  '00 00 * * 1'
+# on: 
+#   push:
+#   pull_request: master
+#   schedule:
+#     - cron:  '00 00 * * 1'
 
-jobs:
-  build-linux:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: False
+# jobs:
+#   build-linux:
+#     runs-on: ubuntu-latest
+#     strategy:
+#       fail-fast: False
 
-    steps:
-    - uses: actions/checkout@v2
-    - name: install linux packages
-      shell: pwsh
-      run: |
-        sudo apt install build-essential
-    - uses: conda-incubator/setup-miniconda@v2
-      with:
-        miniconda-version: "latest"
-        channels: conda-forge
-        auto-update-conda: true
-        python-version: "3.9"
-        environment-file: environment.yml
-    - name: Install anba4
-      shell: pwsh
-      run: |
-        pip install -e .
-        conda list
-    - name: Test with pytest
-      shell: pwsh  
-      run: |
-        pytest --cov=anba4
-    - name: Run coveralls
-      shell: pwsh
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        coveralls --service=github
+#     steps:
+#     - uses: actions/checkout@v2
+#     - name: install linux packages
+#       shell: pwsh
+#       run: |
+#         sudo apt install build-essential
+#     - uses: conda-incubator/setup-miniconda@v2
+#       with:
+#         miniconda-version: "latest"
+#         channels: conda-forge
+#         auto-update-conda: true
+#         python-version: "3.9"
+#         environment-file: environment.yml
+#     - name: Install anba4
+#       shell: pwsh
+#       run: |
+#         pip install -e .
+#         conda list
+#     - name: Test with pytest
+#       shell: pwsh  
+#       run: |
+#         pytest --cov=anba4
+#     - name: Run coveralls
+#       shell: pwsh
+#       env:
+#         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#       run: |
+#         coveralls --service=github
