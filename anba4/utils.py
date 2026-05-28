@@ -1,16 +1,24 @@
 import numpy as np
 
 def ComputeShearCenter(stiff_matrix):
-    K1 = np.array([[stiff_matrix[i, j] for j in range(3)] for i in range(3)])
-    K3 = np.array([[stiff_matrix[i, j+3] for j in range(3)] for i in range(3)])
-    Y = np.linalg.solve(K1, -K3)
-    return [-Y[1,2], Y[0,2]]
+    # K1 = np.array([[stiff_matrix[i, j] for j in range(3)] for i in range(3)])
+    # K3 = np.array([[stiff_matrix[i, j+3] for j in range(3)] for i in range(3)])
+    # Y = np.linalg.solve(K1, -K3)
+    # return [-Y[1,2], Y[0,2]]
+    K = np.array([[stiff_matrix[i, j] for j in range(6)] for i in range(6)])
+    C = np.linalg.inv(K)
+    return [-C[1,5]/C[5,5], C[0,5]/C[5,5]]
 
 def ComputeTensionCenter(stiff_matrix):
-    K1 = np.array([[stiff_matrix[i, j] for j in range(3)] for i in range(3)])
-    K3 = np.array([[stiff_matrix[i, j+3] for j in range(3)] for i in range(3)])
-    Y = np.linalg.solve(K1, -K3)
-    return [Y[2,1], -Y[2,0]]
+    # K1 = np.array([[stiff_matrix[i, j] for j in range(3)] for i in range(3)])
+    # K3 = np.array([[stiff_matrix[i, j+3] for j in range(3)] for i in range(3)])
+    # Y = np.linalg.solve(K1, -K3)
+    # return [Y[2,1], -Y[2,0]]
+    K = np.array([[stiff_matrix[i, j] for j in range(6)] for i in range(6)])
+    C = np.linalg.inv(K)
+    x = C[3,3] * C[4,4] - C[3,4]*C[3,4]
+    return [(C[2,4]*C[3,3] - C[2,3]*C[3,4]) / x, (C[2,4]*C[3,4] - C[2,3]*C[4,4]) / x]
+
 
 def ComputeMassCenter(mass_matrix):
     M1 = np.array([[mass_matrix[i, j] for j in range(3)] for i in range(3)])
